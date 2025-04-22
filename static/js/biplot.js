@@ -13,7 +13,8 @@ let biplot = {
     explainedVariance: null,
     colorScale: d3.scaleOrdinal(d3.schemeCategory10),
     highlightedPlayerId: null,
-    zoomTransform: null
+    zoomTransform: null,
+    selectedPositions: new Set() // Track selected positions for filtering
 };
 
 // Initialize the biplot visualization
@@ -54,13 +55,48 @@ function initializeBiplot() {
     
     // Add loading message
     biplot.svg.append('text')
+        .attr('class', 'loading-text')
         .attr('x', biplot.width / 2)
         .attr('y', biplot.height / 2)
         .attr('text-anchor', 'middle')
         .text('Loading PCA data...');
     
+    // Add reset button
+    addBiplotResetButton();
+    
     // Initial data load and rendering
     loadPCAData();
+}
+
+// Add reset button for biplot
+function addBiplotResetButton() {
+    const resetButton = d3.select('#biplot-container')
+        .append('div')
+        .attr('id', 'biplot-reset')
+        .style('position', 'absolute')
+        .style('top', '10px')
+        .style('left', '10px')
+        .style('z-index', '10')
+        .style('cursor', 'pointer')
+        .style('background-color', '#f0f0f0')
+        .style('border', '1px solid #ccc')
+        .style('border-radius', '3px')
+        .style('padding', '5px 10px')
+        .text('Reset Zoom & Selection')
+        .on('click', function() {
+            // Reset zoom
+            d3.select('#biplot svg')
+                .transition()
+                .duration(750)
+                .call(d3.zoom().transform, d3.zoomIdentity);
+            
+            // Reset selection
+            biplot.highlightedPlayerId = null;
+            biplot.selectedPositions.clear();
+            
+            // Update visualization
+            renderBiplot();
+        });
 }
 
 // Load PCA data from API
@@ -216,10 +252,19 @@ function renderBiplot() {
             return (biplot.highlightedPlayerId && d.player_id === biplot.highlightedPlayerId) ? 2 : 0;
         })
         .attr('opacity', d => {
-            // Fade non-selected players if there's a selection
+            // Handle opacity based on different selection states
+            // If a player is highlighted, fade all others
             if (biplot.highlightedPlayerId && d.player_id !== biplot.highlightedPlayerId) {
                 return 0.3;
             }
+            
+            // If positions are selected, fade non-matching positions
+            if (biplot.selectedPositions.size > 0) {
+                const position = d.player_positions ? d.player_positions.split(',')[0] : 'Unknown';
+                return biplot.selectedPositions.has(position) ? 0.7 : 0.2;
+            }
+            
+            // Default opacity
             return 0.7;
         })
         .on('mouseover', function(event, d) {
@@ -248,9 +293,16 @@ function renderBiplot() {
             d3.select(this)
                 .attr('r', 3)
                 .attr('opacity', d => {
+                    // Restore appropriate opacity based on selection state
                     if (biplot.highlightedPlayerId && d.player_id !== biplot.highlightedPlayerId) {
                         return 0.3;
                     }
+                    
+                    if (biplot.selectedPositions.size > 0) {
+                        const position = d.player_positions ? d.player_positions.split(',')[0] : 'Unknown';
+                        return biplot.selectedPositions.has(position) ? 0.7 : 0.2;
+                    }
+                    
                     return 0.7;
                 });
             
@@ -364,7 +416,7 @@ function addBiplotLegend() {
     // Add background
     legend.append('rect')
         .attr('width', 120)
-        .attr('height', topPositions.length * 20 + 25)
+        .attr('height', topPositions.length * 20 + 45) // Extra height for toggle button
         .attr('fill', 'white')
         .attr('opacity', 0.7)
         .attr('rx', 5)
@@ -378,39 +430,86 @@ function addBiplotLegend() {
         .style('font-weight', 'bold')
         .text('Positions');
     
+    // Add toggle instructions
+    legend.append('text')
+        .attr('x', 10)
+        .attr('y', 30)
+        .style('font-size', '8px')
+        .style('font-style', 'italic')
+        .text('Click to filter by position');
+    
     // Add legend items
     topPositions.forEach((position, i) => {
+        // Check if position is selected
+        const isSelected = biplot.selectedPositions.has(position);
+        
         // Create group for legend item
         const item = legend.append('g')
-            .attr('transform', `translate(10, ${i * 20 + 30})`)
+            .attr('transform', `translate(10, ${i * 20 + 45})`)
             .style('cursor', 'pointer')
             .on('click', function() {
-                // Update position filter on click
-                if (dashboardState.filters.position === position) {
-                    dashboardState.filters.position = 'all';
+                // Toggle selection for this position
+                if (biplot.selectedPositions.has(position)) {
+                    biplot.selectedPositions.delete(position);
                 } else {
-                    dashboardState.filters.position = position;
+                    biplot.selectedPositions.add(position);
+                }
+                
+                // If nothing is selected, reset all selections
+                if (biplot.selectedPositions.size === 0) {
+                    // Reset to original state
+                    biplot.selectedPositions.clear();
+                }
+                
+                // Update dashboard state too for consistency
+                if (biplot.selectedPositions.size === 1) {
+                    const selectedPosition = Array.from(biplot.selectedPositions)[0];
+                    dashboardState.filters.position = selectedPosition;
+                    const positionSelector = document.getElementById('position-selector');
+                    if (positionSelector) {
+                        positionSelector.value = selectedPosition;
+                    }
+                } else if (biplot.selectedPositions.size === 0) {
+                    dashboardState.filters.position = 'all';
+                    const positionSelector = document.getElementById('position-selector');
+                    if (positionSelector) {
+                        positionSelector.value = 'all';
+                    }
                 }
                 
                 // Update UI
-                document.getElementById('position-selector').value = dashboardState.filters.position;
                 updateSelectionDetails();
                 
-                // Update visualizations
-                updateAllVisualizations();
+                // Redraw the legend to update selection indicators
+                renderBiplot();
             });
+        
+        // Add selection background for better visibility
+        if (isSelected) {
+            item.append('rect')
+                .attr('width', 100)
+                .attr('height', 16)
+                .attr('x', -2)
+                .attr('y', -8)
+                .attr('fill', '#f0f0f0')
+                .attr('rx', 3)
+                .attr('ry', 3);
+        }
         
         // Add color swatch
         item.append('rect')
             .attr('width', 10)
             .attr('height', 10)
-            .attr('fill', biplot.colorScale(position));
+            .attr('fill', biplot.colorScale(position))
+            .attr('stroke', isSelected ? '#000' : 'none')
+            .attr('stroke-width', isSelected ? 1 : 0);
         
         // Add label
         item.append('text')
             .attr('x', 15)
             .attr('y', 9)
             .style('font-size', '10px')
+            .style('font-weight', isSelected ? 'bold' : 'normal')
             .text(position);
     });
     
@@ -418,7 +517,7 @@ function addBiplotLegend() {
     if (positions.length > topPositions.length) {
         legend.append('text')
             .attr('x', 10)
-            .attr('y', topPositions.length * 20 + 30)
+            .attr('y', topPositions.length * 20 + 45)
             .style('font-size', '10px')
             .style('font-style', 'italic')
             .text(`+ ${positions.length - topPositions.length} more...`);
@@ -480,15 +579,33 @@ function updateBiplot(filteredData) {
     }
     
     // If no reload needed, just update the existing visualization
+    // Update position selection based on dashboard state
+    if (dashboardState.filters.position !== 'all') {
+        biplot.selectedPositions.clear();
+        biplot.selectedPositions.add(dashboardState.filters.position);
+    } else if (biplot.selectedPositions.size > 0 && dashboardState.filters.position === 'all') {
+        biplot.selectedPositions.clear();
+    }
+    
     // Filter points based on current filters
     const filteredIds = new Set(filteredData.map(d => d.player_id));
     
     biplot.svg.selectAll('.data-point')
         .attr('opacity', d => {
+            // If a player is highlighted, fade all others
             if (biplot.highlightedPlayerId && d.player_id !== biplot.highlightedPlayerId) {
-                return 0.1;
+                return 0.2;
             }
-            return filteredIds.has(d.player_id) ? 0.7 : 0.1;
+            
+            // If positions are selected, fade non-matching positions
+            if (biplot.selectedPositions.size > 0) {
+                const position = d.player_positions ? d.player_positions.split(',')[0] : 'Unknown';
+                if (!biplot.selectedPositions.has(position)) {
+                    return 0.2;
+                }
+            }
+            
+            return filteredIds.has(d.player_id) ? 0.7 : 0.2;
         })
         .attr('r', d => filteredIds.has(d.player_id) ? 3 : 2);
 }

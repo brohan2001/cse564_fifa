@@ -8,7 +8,10 @@ let worldMap = {
     tooltip: null,
     worldData: null,
     colorScale: null,
-    legendContainer: null
+    legendContainer: null,
+    zoomGroup: null,
+    selectedCountry: null,
+    originalData: {} // Store original country data for resets
 };
 
 // Initialize the world map visualization
@@ -38,8 +41,8 @@ function initializeWorldMap() {
     // Create tooltip
     worldMap.tooltip = createTooltip();
     
-    // Add a group for the map
-    worldMap.g = worldMap.svg.append('g');
+    // Add a group for the map (will be used for zooming)
+    worldMap.zoomGroup = worldMap.svg.append('g');
     
     // Create projection for the map
     worldMap.projection = d3.geoNaturalEarth1()
@@ -59,6 +62,9 @@ function initializeWorldMap() {
         .attr('class', 'legend')
         .attr('transform', `translate(20, ${worldMap.height - 40})`);
     
+    // Add zoom controls
+    addZoomControls();
+    
     // Add loading text
     worldMap.svg.append('text')
         .attr('class', 'loading-text')
@@ -76,6 +82,7 @@ function initializeWorldMap() {
             
             // Process the country data from our dataset
             const countryData = processCountryData();
+            worldMap.originalData = JSON.parse(JSON.stringify(countryData)); // Deep copy for resets
             
             // Render the map
             renderWorldMap(countryData);
@@ -85,6 +92,124 @@ function initializeWorldMap() {
             worldMap.svg.select('.loading-text')
                 .text('Error loading map data. Please refresh the page.');
         });
+}
+
+// Add zoom controls to the map
+function addZoomControls() {
+    // Create a container for controls
+    const controlsContainer = worldMap.svg.append('g')
+        .attr('class', 'zoom-controls')
+        .attr('transform', `translate(${worldMap.width - 70}, 20)`);
+    
+    // Add background for controls
+    controlsContainer.append('rect')
+        .attr('width', 60)
+        .attr('height', 90)
+        .attr('fill', 'white')
+        .attr('stroke', '#ccc')
+        .attr('stroke-width', 1)
+        .attr('rx', 5)
+        .attr('ry', 5)
+        .attr('opacity', 0.8);
+    
+    // Add zoom in button
+    const zoomIn = controlsContainer.append('g')
+        .attr('class', 'zoom-in')
+        .attr('transform', 'translate(30, 25)')
+        .style('cursor', 'pointer');
+    
+    zoomIn.append('circle')
+        .attr('r', 15)
+        .attr('fill', '#f0f0f0')
+        .attr('stroke', '#999');
+    
+    zoomIn.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', 5)
+        .text('+')
+        .attr('font-size', '20px')
+        .attr('font-weight', 'bold');
+    
+    // Add zoom out button
+    const zoomOut = controlsContainer.append('g')
+        .attr('class', 'zoom-out')
+        .attr('transform', 'translate(30, 65)')
+        .style('cursor', 'pointer');
+    
+    zoomOut.append('circle')
+        .attr('r', 15)
+        .attr('fill', '#f0f0f0')
+        .attr('stroke', '#999');
+    
+    zoomOut.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', 5)
+        .text('−')
+        .attr('font-size', '20px')
+        .attr('font-weight', 'bold');
+    
+    // Add functionality to zoom buttons
+    zoomIn.on('click', function() {
+        worldMap.zoom.scaleBy(worldMap.svg.transition().duration(300), 1.5);
+    });
+    
+    zoomOut.on('click', function() {
+        worldMap.zoom.scaleBy(worldMap.svg.transition().duration(300), 0.75);
+    });
+    
+    // Add reset button
+    const reset = controlsContainer.append('g')
+        .attr('class', 'zoom-reset')
+        .attr('transform', 'translate(30, 105)')
+        .style('cursor', 'pointer');
+    
+    reset.append('circle')
+        .attr('r', 15)
+        .attr('fill', '#f0f0f0')
+        .attr('stroke', '#999');
+    
+    reset.append('text')
+        .attr('text-anchor', 'middle')
+        .attr('dy', 5)
+        .text('R')
+        .attr('font-size', '14px')
+        .attr('font-weight', 'bold');
+    
+    // Extend the background to include reset button
+    controlsContainer.select('rect')
+        .attr('height', 130);
+    
+    // Add functionality to reset button
+    reset.on('click', function() {
+        // Reset zoom
+        worldMap.svg.transition()
+            .duration(750)
+            .call(worldMap.zoom.transform, d3.zoomIdentity);
+        
+        // Reset country selection if any
+        if (worldMap.selectedCountry) {
+            worldMap.selectedCountry = null;
+            updateWorldMap(filterData());
+        }
+    });
+}
+
+// Set up zoom behavior
+function setupZoom() {
+    // Define zoom behavior
+    worldMap.zoom = d3.zoom()
+        .scaleExtent([1, 8])
+        .on('zoom', function(event) {
+            worldMap.zoomGroup.attr('transform', event.transform);
+            
+            // Update path stroke width based on zoom level
+            const strokeWidth = 0.5 / event.transform.k;
+            worldMap.zoomGroup.selectAll('path')
+                .attr('stroke-width', strokeWidth);
+        });
+    
+    // Apply zoom behavior to SVG
+    worldMap.svg.call(worldMap.zoom);
 }
 
 // Load GeoJSON data
@@ -119,10 +244,13 @@ function processCountryData() {
         'England': 'United Kingdom',
         'Scotland': 'United Kingdom',
         'Wales': 'United Kingdom',
+        'Northern Ireland': 'United Kingdom',
         'United States': 'United States of America',
         'USA': 'United States of America',
         'Korea Republic': 'South Korea',
-        'Russia': 'Russian Federation'
+        'Russia': 'Russian Federation',
+        'UK': 'United Kingdom',
+        'Great Britain': 'United Kingdom'
     };
     
     // Process each player
@@ -196,7 +324,7 @@ function renderWorldMap(countryData) {
     worldMap.colorScale.domain([0, maxPlayers]);
     
     // Create the map
-    worldMap.g.selectAll('path')
+    worldMap.zoomGroup.selectAll('path')
         .data(worldMap.worldData.features)
         .enter()
         .append('path')
@@ -213,6 +341,7 @@ function renderWorldMap(countryData) {
         })
         .attr('stroke', '#fff')
         .attr('stroke-width', 0.5)
+        .attr('data-country', d => d.properties.name)
         .on('mouseover', function(event, d) {
             // Highlight country
             d3.select(this)
@@ -254,10 +383,12 @@ function renderWorldMap(countryData) {
             }
         })
         .on('mouseout', function() {
-            // Remove highlight
-            d3.select(this)
-                .attr('stroke', '#fff')
-                .attr('stroke-width', 0.5);
+            // Remove highlight if not selected
+            if (!worldMap.selectedCountry || d3.select(this).attr('data-country') !== worldMap.selectedCountry) {
+                d3.select(this)
+                    .attr('stroke', '#fff')
+                    .attr('stroke-width', 0.5);
+            }
             
             // Hide tooltip
             worldMap.tooltip.transition()
@@ -267,34 +398,60 @@ function renderWorldMap(countryData) {
         .on('click', function(event, d) {
             // Get country name
             const countryName = d.properties.name;
-            const country = countryData[countryName];
             
-            if (country && country.leaguesArray && country.leaguesArray.length > 0) {
-                // If there's only one league in the country, select it directly
-                if (country.leaguesArray.length === 1) {
-                    const leagueName = country.leaguesArray[0].name;
-                    
-                    // Update dashboard state
-                    dashboardState.filters.league = leagueName;
-                    dashboardState.filters.club = "all"; // Reset club selection
-                    
-                    // Update UI
-                    const leagueSelector = document.getElementById('league-selector');
-                    if (leagueSelector) {
-                        leagueSelector.value = leagueName;
+            // Toggle selection
+            if (worldMap.selectedCountry === countryName) {
+                // Deselect country
+                worldMap.selectedCountry = null;
+                
+                // Reset all countries to original colors
+                updateWorldMap(filterData());
+            } else {
+                worldMap.selectedCountry = countryName;
+                const country = countryData[countryName];
+                
+                if (country && country.leaguesArray && country.leaguesArray.length > 0) {
+                    // If there's only one league in the country, select it directly
+                    if (country.leaguesArray.length === 1) {
+                        const leagueName = country.leaguesArray[0].name;
+                        
+                        // Update dashboard state
+                        dashboardState.filters.league = leagueName;
+                        dashboardState.filters.club = "all"; // Reset club selection
+                        
+                        // Update UI
+                        const leagueSelector = document.getElementById('league-selector');
+                        if (leagueSelector) {
+                            leagueSelector.value = leagueName;
+                        }
+                        
+                        updateClubSelector();
+                        updateSelectionDetails();
+                        
+                        // Update visualizations
+                        updateAllVisualizations();
+                    } else {
+                        // Highlight only the selected country
+                        worldMap.zoomGroup.selectAll('path')
+                            .transition()
+                            .duration(300)
+                            .attr('fill', function(d) {
+                                if (d.properties.name === countryName) {
+                                    const country = countryData[countryName];
+                                    return country ? worldMap.colorScale(country.numPlayers) : '#f0f0f0';
+                                }
+                                return '#f0f0f0';
+                            });
+                        
+                        // Show a dialog to select a league
+                        showLeagueSelectionForCountry(countryName, country.leaguesArray);
                     }
-                    
-                    updateClubSelector();
-                    updateSelectionDetails();
-                    
-                    // Update visualizations
-                    updateAllVisualizations();
-                } else {
-                    // If multiple leagues, show a popup to select
-                    showLeagueSelectionForCountry(countryName, country.leaguesArray);
                 }
             }
         });
+    
+    // Set up zoom after creating the map
+    setupZoom();
     
     // Create legend
     createMapLegend(maxPlayers);
@@ -345,7 +502,12 @@ function showLeagueSelectionForCountry(countryName, leagues) {
         .text('✕');
     
     closeButton.on('click', function() {
+        // Remove dialog
         dialog.remove();
+        
+        // Reset country selection
+        worldMap.selectedCountry = null;
+        updateWorldMap(filterData());
     });
     
     // Add league options
@@ -457,6 +619,11 @@ function updateWorldMap(filteredData) {
         return;
     }
     
+    // If a country is selected and we want to keep the selection, return
+    if (worldMap.selectedCountry && !filteredData) {
+        return;
+    }
+    
     // Process filtered data for countries
     const countryData = {};
     
@@ -465,10 +632,13 @@ function updateWorldMap(filteredData) {
         'England': 'United Kingdom',
         'Scotland': 'United Kingdom',
         'Wales': 'United Kingdom',
+        'Northern Ireland': 'United Kingdom',
         'United States': 'United States of America',
         'USA': 'United States of America',
         'Korea Republic': 'South Korea',
-        'Russia': 'Russian Federation'
+        'Russia': 'Russian Federation',
+        'UK': 'United Kingdom',
+        'Great Britain': 'United Kingdom'
     };
     
     // Process filtered players
@@ -520,18 +690,31 @@ function updateWorldMap(filteredData) {
     worldMap.colorScale.domain([0, maxPlayers]);
     
     // Update map colors
-    worldMap.g.selectAll('path')
+    worldMap.zoomGroup.selectAll('path')
         .transition()
         .duration(500)
         .attr('fill', function(d) {
             // Get country name
             const countryName = d.properties.name;
             
+            // If we have a selected country, only show it colored
+            if (worldMap.selectedCountry && countryName !== worldMap.selectedCountry) {
+                return '#f0f0f0';
+            }
+            
             // Find matching country data
             const country = countryData[countryName];
             
             // Return color based on player count
             return country ? worldMap.colorScale(country.numPlayers) : '#f0f0f0';
+        })
+        .attr('stroke', function(d) {
+            // Highlight selected country
+            return (worldMap.selectedCountry && d.properties.name === worldMap.selectedCountry) ? '#000' : '#fff';
+        })
+        .attr('stroke-width', function(d) {
+            // Thicker border for selected country
+            return (worldMap.selectedCountry && d.properties.name === worldMap.selectedCountry) ? 1.5 : 0.5;
         });
     
     // Update legend
