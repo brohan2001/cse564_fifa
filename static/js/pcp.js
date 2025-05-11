@@ -386,19 +386,110 @@ function updatePCP(data) {
 }
 
 // Add legend for PCP
+// function addPCPLegend(groups) {
+//     // Limit to top N groups to avoid overcrowding
+//     const topGroups = groups.slice(0, 10);
+    
+//     // Create legend container
+//     const legend = pcp.svg.append('g')
+//         .attr('class', 'pcp-legend')
+//         .attr('transform', `translate(${pcp.width - 150}, 0)`);
+    
+//     // Add background
+//     legend.append('rect')
+//         .attr('width', 150)
+//         .attr('height', topGroups.length * 20 + 25)
+//         .attr('fill', 'white')
+//         .attr('opacity', 0.7)
+//         .attr('rx', 5)
+//         .attr('ry', 5);
+    
+//     // Add title
+//     legend.append('text')
+//         .attr('x', 10)
+//         .attr('y', 15)
+//         .style('font-size', '12px')
+//         .style('font-weight', 'bold')
+//         .text(pcp.clubMode ? 'Leagues' : 'Positions');
+    
+//     // Add legend items
+//     topGroups.forEach((group, i) => {
+//         // Create group for legend item
+//         const item = legend.append('g')
+//             .attr('transform', `translate(10, ${i * 20 + 30})`)
+//             .style('cursor', 'pointer')
+//             .on('click', function() {
+//                 // Update filter based on legend item
+//                 if (pcp.clubMode) {
+//                     if (dashboardState.filters.league === group) {
+//                         dashboardState.filters.league = 'all';
+//                     } else {
+//                         dashboardState.filters.league = group;
+//                     }
+//                     document.getElementById('league-selector').value = dashboardState.filters.league;
+//                 } else {
+//                     if (dashboardState.filters.position === group) {
+//                         dashboardState.filters.position = 'all';
+//                     } else {
+//                         dashboardState.filters.position = group;
+//                     }
+//                     document.getElementById('position-selector').value = dashboardState.filters.position;
+//                 }
+                
+//                 // Update UI
+//                 updateSelectionDetails();
+                
+//                 // Update visualizations
+//                 updateAllVisualizations();
+//             });
+        
+//         // Add color swatch
+//         item.append('rect')
+//             .attr('width', 10)
+//             .attr('height', 10)
+//             .attr('fill', pcp.colorScale(group.split(',')[0]));
+        
+//         // Add label
+//         item.append('text')
+//             .attr('x', 15)
+//             .attr('y', 9)
+//             .style('font-size', '10px')
+//             .text(group.split(',')[0]);
+//     });
+    
+//     // Add "more" indicator if there are more groups
+//     if (groups.length > topGroups.length) {
+//         legend.append('text')
+//             .attr('x', 10)
+//             .attr('y', topGroups.length * 20 + 30)
+//             .style('font-size', '10px')
+//             .style('font-style', 'italic')
+//             .text(`+ ${groups.length - topGroups.length} more...`);
+//     }
+// }
+
+// Add legend to PCP - positioned at the bottom similar to biplot
 function addPCPLegend(groups) {
-    // Limit to top N groups to avoid overcrowding
+    // Get top groups for legend
     const topGroups = groups.slice(0, 10);
     
-    // Create legend container
+    // Calculate legend positioning
+    const legendWidth = pcp.width;
+    const itemsPerRow = 5; // Number of items per row in the legend
+    const itemWidth = legendWidth / itemsPerRow;
+    const itemHeight = 20;
+    const rows = Math.ceil(topGroups.length / itemsPerRow);
+    const legendHeight = rows * itemHeight + 30; // Extra height for title
+    
+    // Create legend container at the bottom
     const legend = pcp.svg.append('g')
         .attr('class', 'pcp-legend')
-        .attr('transform', `translate(${pcp.width - 150}, 0)`);
+        .attr('transform', `translate(0, ${pcp.height + 50})`); // Position below x-axis
     
     // Add background
     legend.append('rect')
-        .attr('width', 150)
-        .attr('height', topGroups.length * 20 + 25)
+        .attr('width', legendWidth)
+        .attr('height', legendHeight)
         .attr('fill', 'white')
         .attr('opacity', 0.7)
         .attr('rx', 5)
@@ -412,11 +503,22 @@ function addPCPLegend(groups) {
         .style('font-weight', 'bold')
         .text(pcp.clubMode ? 'Leagues' : 'Positions');
     
-    // Add legend items
+    // Add instructions
+    legend.append('text')
+        .attr('x', legendWidth - 170)
+        .attr('y', 15)
+        .style('font-size', '8px')
+        .style('font-style', 'italic')
+        .text('Click to filter');
+    
+    // Add legend items in a grid layout
     topGroups.forEach((group, i) => {
+        const row = Math.floor(i / itemsPerRow);
+        const col = i % itemsPerRow;
+        
         // Create group for legend item
         const item = legend.append('g')
-            .attr('transform', `translate(10, ${i * 20 + 30})`)
+            .attr('transform', `translate(${col * itemWidth + 10}, ${row * itemHeight + 30})`)
             .style('cursor', 'pointer')
             .on('click', function() {
                 // Update filter based on legend item
@@ -443,29 +545,41 @@ function addPCPLegend(groups) {
                 updateAllVisualizations();
             });
         
+        // Highlight selected item
+        const isSelected = (pcp.clubMode && dashboardState.filters.league === group) || 
+                          (!pcp.clubMode && dashboardState.filters.position === group);
+        
+        if (isSelected) {
+            item.append('rect')
+                .attr('width', itemWidth - 15)
+                .attr('height', 16)
+                .attr('x', -5)
+                .attr('y', -10)
+                .attr('fill', '#f0f0f0')
+                .attr('rx', 3)
+                .attr('ry', 3);
+        }
+        
         // Add color swatch
         item.append('rect')
             .attr('width', 10)
             .attr('height', 10)
-            .attr('fill', pcp.colorScale(group.split(',')[0]));
+            .attr('fill', pcp.colorScale(group.split(',')[0]))
+            .attr('stroke', isSelected ? '#000' : 'none')
+            .attr('stroke-width', isSelected ? 1 : 0);
         
         // Add label
         item.append('text')
             .attr('x', 15)
             .attr('y', 9)
             .style('font-size', '10px')
+            .style('font-weight', isSelected ? 'bold' : 'normal')
             .text(group.split(',')[0]);
     });
     
-    // Add "more" indicator if there are more groups
-    if (groups.length > topGroups.length) {
-        legend.append('text')
-            .attr('x', 10)
-            .attr('y', topGroups.length * 20 + 30)
-            .style('font-size', '10px')
-            .style('font-style', 'italic')
-            .text(`+ ${groups.length - topGroups.length} more...`);
-    }
+    // Update SVG height to accommodate legend
+    d3.select('#pcp svg')
+        .attr('height', pcp.height + pcp.margin.top + pcp.margin.bottom + legendHeight + 10);
 }
 
 // Highlight a specific player in the PCP
@@ -479,3 +593,4 @@ function highlightPlayerInPCP(playerId) {
         updatePCP(filterData());
     }
 }
+  
