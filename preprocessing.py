@@ -224,8 +224,22 @@ def process_data_for_visualizations():
                 'value_millions_eur': 'avg_value'
             }, inplace=True)
             
+            totalPlayers=0
+            for i in range(0,len(country_stats['country'])):
+               totalPlayers+=country_stats['num_players'][i]
+               #print(totalPlayers)
+               
+            country_stats['percentage_of_players']=np.nan
+            
+            for i in range(0,len(country_stats['country'])):
+               print(country_stats['num_players'][i])
+               country_stats['percentage_of_players'][i]=(((country_stats['num_players'][i])/(totalPlayers))*100)
+               
+               
+            
             # Save to CSV
             output_path = os.path.join('data', 'country_stats.csv')
+            print(country_stats)
             country_stats.to_csv(output_path, index=False)
             print(f"Created country_stats.csv with {len(country_stats)} countries at {output_path}")
             
@@ -237,7 +251,7 @@ def process_data_for_visualizations():
         except Exception as e:
             print(f"Error creating country statistics: {e}")
             print(traceback.format_exc())
-            country_stats = pd.DataFrame(columns=['country', 'num_players', 'avg_overall', 'avg_value'])
+            country_stats = pd.DataFrame(columns=['country', 'num_players', 'avg_overall', 'avg_value', 'percentage_of_players'])
             # Still save the empty DataFrame to prevent errors
             country_stats.to_csv(os.path.join('data', 'country_stats.csv'), index=False)
 
@@ -265,6 +279,7 @@ def process_data_for_visualizations():
             'fifa_data': fifa_data,
             'club_stats': club_stats,
             'country_stats': country_stats
+            
         }
     except Exception as e:
         print(f"Error in process_data_for_visualizations: {e}")
@@ -298,7 +313,7 @@ def create_empty_files():
         
         # Create empty country_stats.csv
         pd.DataFrame(columns=[
-            'country', 'num_players', 'avg_overall', 'avg_value'
+            'country', 'num_players', 'avg_overall', 'avg_value', 'percentage_of_players'
         ]).to_csv(os.path.join('data', 'country_stats.csv'), index=False)
         
         # Create empty league_countries.csv

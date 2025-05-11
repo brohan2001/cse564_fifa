@@ -19,6 +19,11 @@ let dashboardState = {
     }
 };
 
+
+// main.js
+
+// Import or include countryPieChart.js before this script in your HTML
+
 // Main initialization function
 async function initDashboard() {
     try {
@@ -40,7 +45,11 @@ async function initDashboard() {
         initializePCP();
         initializeBiplot();
         initializePlayerProfile();
-        
+		console.log(globalData.countries);
+		PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', { title: 'Players by Country' })
+		
+		
+		
         // Add event listeners for dashboard coordination
         setupEventListeners();
         
