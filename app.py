@@ -31,7 +31,8 @@ def load_data():
             print("Processed data not found. Running preprocessing...")
             try:
                 import preprocessing
-                preprocessing.process_data_for_visualizations()
+                Op=preprocessing.process_data_for_visualizations()
+                #print(Op)
                 print("Preprocessing completed successfully")
             except Exception as e:
                 print(f"Error during preprocessing: {e}")
@@ -358,6 +359,21 @@ def reload_data():
     league_countries = None
     load_data()
     return jsonify({"status": "Data reloaded"})
+
+
+
+
+@app.route('/data')
+def data():
+    return 0
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     # Load data at startup
