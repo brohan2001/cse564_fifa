@@ -915,7 +915,7 @@ function addZoomControls() {
             
             // Reset dashboard country filter
             dashboardState.filters.country = "all";
-            
+            initBarChart('#Bar-Chart', globalData.matrix_data);
             // Update UI
             const countrySelector = document.getElementById('country-selector');
             if (countrySelector) {
@@ -1171,6 +1171,7 @@ function renderWorldMap(countryData) {
             // Get original country name from our data
             const dataCountryName = country.dataCountryName;
             
+
             // Toggle selection
             if (worldMap.selectedCountry === geoJSONCountryName) {
                 // Deselect country
@@ -1200,6 +1201,8 @@ function renderWorldMap(countryData) {
                     countrySelector.value = dataCountryName;
                 }
                 
+                updateBarChart('#Bar-Chart', globalData.matrix_data,worldMap.selectedCountry );
+
                 // If there are leagues in this country, optionally show league selection
                 if (country.leaguesArray && country.leaguesArray.length > 0) {
                     // For countries with a single league, optionally auto-select it
