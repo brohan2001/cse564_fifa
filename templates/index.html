@@ -39,12 +39,12 @@
                 <div class="visualization-content" id="world-map"></div>
             </div>
             
-            <div class="grid-item" id="undecided-1-container">
+            <div class="grid-item" id="bar-chart-container">
                 <div class="visualization-header">
-                    <h2>Undecided Visualization 12</h2>
-                    <p>To be determined</p>
+                    <h2>Bar Chart</h2>
+                    <p>Bar charts for player distribution by nationality of players</p>
                 </div>
-                <div class="visualization-content" id="undecided-1"></div>
+                <div class="visualization-content" id="Bar-Chart"></div>
             </div>
             
             <div class="grid-item" id="player-profile-container">
@@ -79,7 +79,7 @@
             <div class="grid-item" id="Pie-Chart">
                 <div class="visualization-header">
                     <h2>Pie Chart</h2>
-                    <p> Countrywise distribution of players</p>
+                    <p> Player distribution for countries they play for</p>
                 </div>
                 <div class="visualization-content" id="piechart"></div>
             </div>
@@ -139,6 +139,7 @@
     </footer>
     
     <!-- Load custom JavaScript files -->
+	<script src="{{ url_for('static', filename='js/bar_chart.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/world_map.js') }}"></script>
     <script src="{{ url_for('static', filename='js/pcp.js') }}"></script>

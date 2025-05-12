@@ -140,195 +140,84 @@ def create_club_averages(fifa_data):
         # Return empty DataFrame to allow processing to continue
         return pd.DataFrame(columns=['club_name', 'league_name', 'country', 'num_players'])
 
-def process_data_for_visualizations():
-    """Process FIFA data for all visualizations"""
+def create_country_stats(fifa_data):
+    """Create aggregated stats for each country, including percentage of total players."""
     try:
-        print("Starting data processing for visualizations...")
-        
-        # Ensure data directory exists
-        os.makedirs('data', exist_ok=True)
-        
-        # Load original FIFA data
-        fifa_csv_path = os.path.join('data', 'excel.csv')
-        if not os.path.exists(fifa_csv_path):
-            print(f"ERROR: FIFA data file not found at {fifa_csv_path}")
-            print(f"Current directory: {os.getcwd()}")
-            print(f"Files in data directory: {os.listdir('data') if os.path.exists('data') else 'data directory not found'}")
-            raise FileNotFoundError(f"FIFA data file not found at {fifa_csv_path}")
-        
-        print(f"Loading FIFA data from {fifa_csv_path}")
-        fifa_data = pd.read_csv(fifa_csv_path)
-        print(f"Loaded FIFA data with {len(fifa_data)} players and {len(fifa_data.columns)} columns")
-        print(f"Columns: {fifa_data.columns.tolist()}")
-        
-        # Check for required columns
-        required_cols = ['player_id', 'short_name', 'player_overall', 'club_name', 'league_name']
-        missing_cols = [col for col in required_cols if col not in fifa_data.columns]
-        if missing_cols:
-            print(f"ERROR: Missing required columns in FIFA data: {missing_cols}")
-            raise ValueError(f"Missing required columns: {missing_cols}")
-            
-        # Create league to country mapping
-        league_country_df = create_league_country_mapping()
-        
-        # Add country information to player data
-        fifa_data = fifa_data.merge(league_country_df, on='league_name', how='left')
-        
-        # Check for players without country information
-        missing_country = fifa_data[fifa_data['country'].isna()]
-        if len(missing_country) > 0:
-            print(f"WARNING: {len(missing_country)} players have no country information")
-            print(f"Leagues without country mapping: {missing_country['league_name'].unique().tolist()}")
-            
-            # Fill missing countries with 'Unknown'
-            fifa_data['country'] = fifa_data['country'].fillna('Unknown')
-        
-        # Save processed FIFA data
-        output_path = os.path.join('data', 'fifa_processed.csv')
-        fifa_data.to_csv(output_path, index=False)
-        print(f"Created fifa_processed.csv with {len(fifa_data)} players at {output_path}")
-        
-        # Verify the file was created
+        print("Creating country stats...")
+
+        if fifa_data.empty:
+            print("WARNING: fifa_data is empty, cannot create country stats")
+            return pd.DataFrame()
+
+        # Use 'nationality_name' or 'country' as the country key
+        country_col = 'nationality_name' if 'nationality_name' in fifa_data.columns else 'country'
+
+        # Group by country and count players
+        country_counts = fifa_data.groupby(country_col)['player_id'].count().reset_index()
+        country_counts.rename(columns={'player_id': 'num_players', country_col: 'country'}, inplace=True)
+
+        # Calculate total players
+        total_players = country_counts['num_players'].sum()
+        country_counts['percentage_of_players'] = (country_counts['num_players'] / total_players) * 100
+
+        # Round for readability
+        country_counts['percentage_of_players'] = country_counts['percentage_of_players'].round(2)
+
+        # Save to CSV
+        output_path = os.path.join('data', 'country_stats.csv')
+        country_counts.to_csv(output_path, index=False)
+        print(f"Created country_stats.csv with {len(country_counts)} countries at {output_path}")
+
+        # Verify file creation
         if os.path.exists(output_path):
             print(f"Verified file exists: {output_path}")
         else:
             print(f"WARNING: File was not created: {output_path}")
-        
-        # Create club-level aggregated statistics
-        club_stats = create_club_averages(fifa_data)
-        
-        # Create country-level statistics for the world map
-        try:
-            print("Creating country statistics...")
-            
-            # Make sure 'country' column exists
-            if 'country' not in fifa_data.columns:
-                print("ERROR: 'country' column not found in fifa_data")
-                raise ValueError("'country' column not found in fifa_data")
-            
-            # Group by country and calculate statistics
-            country_stats = fifa_data.groupby('country').agg({
-                'player_id': 'count',
-                'player_overall': 'mean',
-                'value_millions_eur': 'mean'
-            }).reset_index()
-            
-            # Handle NaN values in aggregated columns
-            country_stats['player_overall'] = country_stats['player_overall'].fillna(0)
-            country_stats['value_millions_eur'] = country_stats['value_millions_eur'].fillna(0)
-            
-            # Rename columns for clarity
-            country_stats.rename(columns={
-                'player_id': 'num_players',
-                'player_overall': 'avg_overall',
-                'value_millions_eur': 'avg_value'
-            }, inplace=True)
-            
-            totalPlayers=0
-            for i in range(0,len(country_stats['country'])):
-               totalPlayers+=country_stats['num_players'][i]
-               #print(totalPlayers)
-               
-            country_stats['percentage_of_players']=np.nan
-            
-            for i in range(0,len(country_stats['country'])):
-               print(country_stats['num_players'][i])
-               country_stats['percentage_of_players'][i]=(((country_stats['num_players'][i])/(totalPlayers))*100)
-               
-               
-            
-            # Save to CSV
-            output_path = os.path.join('data', 'country_stats.csv')
-            print(country_stats)
-            country_stats.to_csv(output_path, index=False)
-            print(f"Created country_stats.csv with {len(country_stats)} countries at {output_path}")
-            
-            # Verify the file was created
-            if os.path.exists(output_path):
-                print(f"Verified file exists: {output_path}")
-            else:
-                print(f"WARNING: File was not created: {output_path}")
-        except Exception as e:
-            print(f"Error creating country statistics: {e}")
-            print(traceback.format_exc())
-            country_stats = pd.DataFrame(columns=['country', 'num_players', 'avg_overall', 'avg_value', 'percentage_of_players'])
-            # Still save the empty DataFrame to prevent errors
-            country_stats.to_csv(os.path.join('data', 'country_stats.csv'), index=False)
 
+        return country_counts
 
+    except Exception as e:
+        print(f"Error creating country stats: {e}")
+        print(traceback.format_exc())
+        return pd.DataFrame(columns=['country', 'num_players', 'percentage_of_players'])
 
-        # Usage example:
-        count_nationalities_and_export_to_csv('data/fifa_processed.csv', 'data/country_counts.csv')
+def process_data_for_visualizations():
+    """Process FIFA data for all visualizations."""
+    try:
+        print("Processing FIFA data for visualizations...")
 
+        # Ensure data directory exists
+        os.makedirs('data', exist_ok=True)
 
-        # Example usage:
-        generate_country_nationality_matrix('data/fifa_processed.csv', 'data/country_nationality_matrix.csv')
-        
-        print(f"Files created in data directory:")
-        for filename in os.listdir('data'):
-            file_path = os.path.join('data', filename)
-            if os.path.isfile(file_path):
-                file_size = os.path.getsize(file_path)
-                print(f" - {filename} ({file_size} bytes)")
-                
-                # Additional verification for each file
-                if file_size == 0:
-                    print(f"   WARNING: File {filename} is empty (0 bytes)")
-                    
-                # Check CSV files for content
-                if filename.endswith('.csv'):
-                    try:
-                        df = pd.read_csv(file_path)
-                        print(f"   Verified: {len(df)} rows, {len(df.columns)} columns")
-                    except Exception as file_error:
-                        print(f"   ERROR reading {filename}: {file_error}")
-        
-        return {
-            'fifa_data': fifa_data,
-            'club_stats': club_stats,
-            'country_stats': country_stats
-            
-        }
+        # Load raw FIFA data (adjust the path as needed)
+        raw_path = os.path.join('data', 'fifa_raw.csv')
+        processed_path = os.path.join('data', 'fifa_processed.csv')
+
+        if os.path.exists(processed_path):
+            fifa_data = pd.read_csv(processed_path)
+        elif os.path.exists(raw_path):
+            fifa_data = pd.read_csv(raw_path)
+            # (Insert any additional cleaning steps here if needed)
+            fifa_data.to_csv(processed_path, index=False)
+        else:
+            print("No FIFA data found to process.")
+            return
+
+        # Generate league-country mapping
+        create_league_country_mapping()
+
+        # Generate club averages
+        create_club_averages(fifa_data)
+
+        # Generate country stats **with percentage column**
+        create_country_stats(fifa_data)
+        print("check--------------------------------------")
+
+        print("All preprocessing complete.")
+
     except Exception as e:
         print(f"Error in process_data_for_visualizations: {e}")
         print(traceback.format_exc())
-        # Create minimal empty files to prevent errors in the web app
-        create_empty_files()
-        return None
-import pandas as pd
-
-
-def generate_country_nationality_matrix(input_csv, output_csv):
-    # Read the data
-    df = pd.read_csv(input_csv)
-    
-    # Create a pivot table: index=country, columns=nationality_name, values=count
-    pivot = pd.pivot_table(
-        df,
-        index='country',
-        columns='nationality_name',
-        values='player_id',  # any column with unique values per player
-        aggfunc='count',
-        fill_value=0
-    )
-    
-    # Reset index to have 'country' as a column
-    pivot.reset_index(inplace=True)
-    
-    # --- Add a row for total players from each nationality ---
-    # Exclude the 'country' column for summing
-    nationality_cols = pivot.columns.drop('country')
-    total_row = pivot[nationality_cols].sum(axis=0)
-    total_row['country'] = 'TOTAL'
-    # Convert to DataFrame and append
-    pivot = pd.concat([pivot, pd.DataFrame([total_row])], ignore_index=True)
-    
-    # Save to CSV
-    pivot.to_csv(output_csv, index=False)
-    print(f"Generated nationality matrix with totals: {output_csv}")
-
-# Usage example:
-# generate_country_nationality_matrix('fifa_processed.csv', 'country_nationality_matrix.csv')
 
 
 def create_empty_files():

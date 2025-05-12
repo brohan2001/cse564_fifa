@@ -21,24 +21,24 @@ league_countries = None
 # Function to load data with improved error handling
 def load_data():
     global fifa_data, club_stats, country_stats, league_countries
-    
+    global country_counts, country_nationality_matrix
+
     try:
         print("Starting data loading process...")
-        
+
         # Check if processed files exist, if not, run preprocessing
         fifa_processed_path = os.path.join('data', 'fifa_processed.csv')
         if not os.path.exists(fifa_processed_path):
             print("Processed data not found. Running preprocessing...")
             try:
                 import preprocessing
-                Op=preprocessing.process_data_for_visualizations()
-                #print(Op)
+                Op = preprocessing.process_data_for_visualizations()
                 print("Preprocessing completed successfully")
             except Exception as e:
                 print(f"Error during preprocessing: {e}")
                 print(traceback.format_exc())
                 raise
-        
+
         # Load processed data with error checking
         try:
             fifa_data = pd.read_csv(os.path.join('data', 'fifa_processed.csv'))
@@ -49,7 +49,7 @@ def load_data():
             print(f"Error loading fifa_processed.csv: {e}")
             print(traceback.format_exc())
             fifa_data = pd.DataFrame()
-        
+
         try:
             club_stats = pd.read_csv(os.path.join('data', 'club_averages.csv'))
             print(f"Loaded club_stats: {len(club_stats)} rows")
@@ -57,7 +57,7 @@ def load_data():
             print(f"Error loading club_averages.csv: {e}")
             print(traceback.format_exc())
             club_stats = pd.DataFrame()
-        
+
         try:
             country_stats = pd.read_csv(os.path.join('data', 'country_stats.csv'))
             print(f"Loaded country_stats: {len(country_stats)} rows")
@@ -65,7 +65,7 @@ def load_data():
             print(f"Error loading country_stats.csv: {e}")
             print(traceback.format_exc())
             country_stats = pd.DataFrame()
-        
+
         try:
             league_countries = pd.read_csv(os.path.join('data', 'league_countries.csv'))
             print(f"Loaded league_countries: {len(league_countries)} rows")
@@ -73,9 +73,29 @@ def load_data():
             print(f"Error loading league_countries.csv: {e}")
             print(traceback.format_exc())
             league_countries = pd.DataFrame()
-        
+
+        # --- NEW: Load country_counts.csv ---
+        try:
+            country_counts = pd.read_csv(os.path.join('data', 'country_counts.csv'))
+            print(f"Loaded country_counts: {len(country_counts)} rows")
+            print(f"Sample country_counts: {country_counts.head(3).to_dict(orient='records')}")
+        except Exception as e:
+            print(f"Error loading country_counts.csv: {e}")
+            print(traceback.format_exc())
+            country_counts = pd.DataFrame()
+
+        # --- NEW: Load country_nationality_matrix.csv ---
+        try:
+            country_nationality_matrix = pd.read_csv(os.path.join('data', 'country_nationality_matrix.csv'))
+            print(f"Loaded country_nationality_matrix: {len(country_nationality_matrix)} rows")
+            print(f"Sample country_nationality_matrix: {country_nationality_matrix.head(1).to_dict(orient='records')}")
+        except Exception as e:
+            print(f"Error loading country_nationality_matrix.csv: {e}")
+            print(traceback.format_exc())
+            country_nationality_matrix = pd.DataFrame()
+
         print("Data loading completed")
-            
+
     except Exception as e:
         print(f"Unhandled error in data loading: {e}")
         print(traceback.format_exc())
@@ -84,6 +104,8 @@ def load_data():
         club_stats = pd.DataFrame()
         country_stats = pd.DataFrame()
         league_countries = pd.DataFrame()
+        country_counts = pd.DataFrame()
+        country_nationality_matrix = pd.DataFrame()
 
 # Use a before_request handler with improved error handling
 @app.before_request
@@ -131,6 +153,48 @@ def get_countries():
         print(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
+
+
+
+@app.route('/api/country_matrix')
+def get_country_matrix():
+    """Return country-nationality matrix as JSON"""
+    try:
+        # If you have already loaded the CSV into a global DataFrame, use it
+        # Otherwise, load it here:
+        if 'country_nationality_matrix' not in globals() or country_nationality_matrix is None or country_nationality_matrix.empty:
+            print("Loading country_nationality_matrix.csv...")
+            try:
+                matrix = pd.read_csv(os.path.join('data', 'country_nationality_matrix.csv'))
+            except Exception as e:
+                print(f"Error loading country_nationality_matrix.csv: {e}")
+                print(traceback.format_exc())
+                return jsonify([])  # or return error
+        else:
+            matrix = country_nationality_matrix
+
+        # Convert DataFrame to list of dicts, handling NaN
+        matrix_data = []
+        for _, row in matrix.iterrows():
+            row_dict = {}
+            for col in matrix.columns:
+                value = row[col]
+                if pd.isna(value):
+                    row_dict[col] = None
+                else:
+                    row_dict[col] = int(value) if isinstance(value, (int, float)) and not pd.isna(value) and col != 'country' else value
+            matrix_data.append(row_dict)
+
+        return jsonify(matrix_data)
+    except Exception as e:
+        print(f"Error in get_country_matrix: {e}")
+        print(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
+
+
+
+
+        
 @app.route('/api/leagues')
 def get_leagues():
     """Return league information"""
