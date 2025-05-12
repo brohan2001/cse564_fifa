@@ -501,7 +501,8 @@ async function initDashboard() {
         initializeBiplot();
         initializePlayerProfile();
 		console.log(globalData.countries);
-		PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', { title: 'Players by Country' })
+		PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', { title: 'Players by Country' });
+		initBarChart('#Bar-Chart', globalData.matrix_data);
 		
         // Add event listeners for dashboard coordination
         setupEventListeners();
@@ -555,7 +556,17 @@ async function loadData() {
         const playersData = await playersResponse.json();
         console.log(`Players data received: ${playersData.length} items`);
         globalData.players = playersData;
-        
+
+        // --- NEW: Load country nationality matrix data ---
+        console.log("Fetching country matrix data...");
+        const matrixResponse = await fetch('/api/country_matrix');
+        if (!matrixResponse.ok) {
+            throw new Error(`Country Matrix API error: ${matrixResponse.status}`);
+        }
+        const matrixData = await matrixResponse.json();
+        console.log(`Country matrix data received: ${matrixData.length} rows`);
+        globalData.matrix_data = matrixData;
+
         console.log("All data loaded successfully!");
         return true;
     } catch (error) {
