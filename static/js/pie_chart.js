@@ -1,67 +1,66 @@
 /**
- * Creates an improved pie chart visualization from JSON data.
+ * Creates a pie chart visualization with interaction for world map integration.
  *
  * @param {Array<Object>} jsonData - Array of objects representing the data.
  * @param {string} keyColumn - Column name to group by (e.g., country).
  * @param {string} valueColumn - Column name for values (e.g., percentage_of_players).
  * @param {string} selector - CSS selector for the container element (e.g., '#piechart').
- * @param {Object} options - Optional settings: { width, height, title, sortData, smallSliceThreshold }.
+ * @param {Object} options - Optional settings for customization.
+ * @returns {Object} - API object with methods to control the chart.
  */
 function PieChartFromJSON(jsonData, keyColumn, valueColumn, selector, options = {}) {
     // Default options
-    const width = options.width || 500;
-    const height = options.height || 500;
-    const radius = Math.min(width, height) / 2.5;
-    const innerRadius = options.donut ? radius * 0.5 : 0; // For donut chart option
-    const title = options.title || '';
-    const sortData = options.sortData !== false; // Sort data by default
-    const smallSliceThreshold = options.smallSliceThreshold || 3; // Percentage threshold for small slices
-    const showLabels = options.showLabels !== false; // Show labels by default
-    const showPercentages = options.showPercentages !== false; // Show percentages by default
+    const width = options.width || 550; // Total width of the container
+    const height = options.height || 400; // Total height of the container
+    
+    // Chart specific dimensions - make the pie chart smaller
+    const pieSize = options.pieSize || 280; // Size of the pie chart area
+    const pieRadius = pieSize / 2.2; // Radius of the pie chart
+    const legendWidth = 200; // Width of the legend area
+    
+    // Calculate positions for pie chart centered in the red circle area
+    const pieX = options.pieX || width / 3; // Position pie chart 1/3 from the left
+    const pieY = options.pieY || height / 2; // Center vertically
     
     // Clear previous content
     d3.select(selector).selectAll("*").remove();
     
-    // Add container for the chart
+    // Create main container
     const container = d3.select(selector)
         .append("div")
-        .attr("class", "pie-chart-container")
+        .attr("id", "pie-chart-container")
         .style("position", "relative")
         .style("width", width + "px")
-        .style("margin", "0 auto");
-    
+        .style("height", height + "px");
+        
     // Add title if provided
+    const title = options.title || '';
     if (title) {
         container.append("div")
             .attr("class", "chart-title")
+            .attr("id", "pie-chart-title")
             .style("text-align", "center")
             .style("font-weight", "bold")
             .style("font-size", "18px")
-            .style("margin-bottom", "20px")
+            .style("margin-bottom", "10px")
             .style("color", "#333")
             .text(title);
     }
     
-    // Create SVG container with viewBox for responsiveness
+    // Create SVG element
     const svg = container.append("svg")
+        .attr("id", "pie-chart-svg")
         .attr("width", width)
         .attr("height", height)
         .attr("viewBox", `0 0 ${width} ${height}`)
-        .style("overflow", "visible")
-        .append("g")
-        .attr("transform", `translate(${width / 2},${height / 2})`);
-        
-    // Background circle for better aesthetics
-    svg.append("circle")
-        .attr("cx", 0)
-        .attr("cy", 0)
-        .attr("r", radius + 2)
-        .attr("fill", "#f8f8f8")
-        .attr("stroke", "#e0e0e0")
-        .attr("stroke-width", 1);
+        .style("overflow", "visible");
+    
+    // Create group for the pie chart centered in the red circle area
+    const pieGroup = svg.append("g")
+        .attr("id", "pie-group")
+        .attr("transform", `translate(${pieX}, ${pieY})`);
     
     // Process the data
-    // Aggregate data
     let pieData;
     if (valueColumn) {
         const counts = d3.rollup(
@@ -79,70 +78,92 @@ function PieChartFromJSON(jsonData, keyColumn, valueColumn, selector, options = 
         pieData = Array.from(counts, ([key, value]) => ({ key, value }));
     }
     
-    // Sort data by value if requested
-    if (sortData) {
-        pieData.sort((a, b) => b.value - a.value);
-    }
+    // Sort data by value (descending)
+    pieData.sort((a, b) => b.value - a.value);
     
-    // Calculate total for percentages
+    // Calculate total and percentages
     const total = d3.sum(pieData, d => d.value);
-    
-    // Add percentage to data
     pieData.forEach(d => {
         d.percentage = (d.value / total) * 100;
-        d.isSmallSlice = d.percentage < smallSliceThreshold;
+        d.isSmallSlice = d.percentage < 3; // Threshold for small slices
     });
     
+    // Handle empty data case
     if (pieData.length === 0) {
-        container.append("div")
-            .style("color", "#d9534f")
-            .style("text-align", "center")
-            .style("padding", "20px")
-            .text(`No data found for column "${keyColumn}".`);
-        return;
+        pieGroup.append("text")
+            .attr("text-anchor", "middle")
+            .text("No data available");
+        return {
+            highlightCountry: () => {} // Return empty function for API consistency
+        };
     }
     
-    // Enhanced color scheme with better contrast and harmony
-    // Using a categorical color scheme optimized for distinguishing different categories
+    // Color scale
     const colorScheme = [
         "#4e79a7", "#f28e2c", "#59a14f", "#e15759", "#76b7b2", 
         "#edc949", "#af7aa1", "#ff9da7", "#9c755f", "#bab0ab",
         "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", 
         "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
     ];
-    
-    // Color scale
     const color = d3.scaleOrdinal()
         .domain(pieData.map(d => d.key))
         .range(colorScheme);
     
-    // Pie generator
+    // Pie layout generator
     const pie = d3.pie()
         .value(d => d.value)
         .sort(null);
     
-    // Arc generator for main slices
+    // Arc generators
     const arc = d3.arc()
-        .innerRadius(innerRadius)
-        .outerRadius(radius)
+        .innerRadius(0)
+        .outerRadius(pieRadius)
         .cornerRadius(2)
         .padAngle(0.01);
     
-    // Arc generator for labels
-    const labelArc = d3.arc()
-        .innerRadius(radius * 0.8)
-        .outerRadius(radius * 1.2);
-    
-    // Arc generator for hover/selected effect
     const hoverArc = d3.arc()
-        .innerRadius(innerRadius)
-        .outerRadius(radius * 1.05)
+        .innerRadius(0)
+        .outerRadius(pieRadius * 1.05)
         .cornerRadius(2)
         .padAngle(0.01);
+    
+    // Create pie slices
+    const slices = pieGroup.selectAll(".slice")
+        .data(pie(pieData))
+        .enter()
+        .append("g")
+        .attr("class", "slice")
+        .attr("data-country", d => d.data.key);
+    
+    // Add paths for slices
+    const paths = slices.append("path")
+        .attr("class", d => `pie-slice pie-slice-${d.data.key.replace(/\s+/g, '-').toLowerCase()}`)
+        .attr("d", arc)
+        .attr("fill", d => color(d.data.key))
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 1)
+        .style("cursor", "pointer");
+    
+    // Add percentage labels on larger slices
+    slices.filter(d => d.data.percentage >= 5)
+        .append("text")
+        .attr("transform", d => {
+            const centroid = arc.centroid(d);
+            return `translate(${centroid[0]},${centroid[1]})`;
+        })
+        .attr("text-anchor", "middle")
+        .attr("dy", "0.35em")
+        .style("font-size", "11px")
+        .style("font-weight", "bold")
+        .style("fill", "#fff")
+        .style("text-shadow", "0px 0px 2px rgba(0,0,0,0.5)")
+        .style("pointer-events", "none")
+        .text(d => `${d.data.percentage.toFixed(1)}%`);
     
     // Create tooltip
     const tooltip = d3.select("body").append("div")
         .attr("class", "pie-tooltip")
+        .attr("id", "pie-chart-tooltip")
         .style("position", "absolute")
         .style("padding", "8px 12px")
         .style("background", "rgba(0, 0, 0, 0.75)")
@@ -152,439 +173,341 @@ function PieChartFromJSON(jsonData, keyColumn, valueColumn, selector, options = 
         .style("pointer-events", "none")
         .style("opacity", 0)
         .style("z-index", 1000)
-        .style("box-shadow", "0 2px 8px rgba(0, 0, 0, 0.2)")
-        .style("max-width", "250px");
+        .style("box-shadow", "0 2px 8px rgba(0, 0, 0, 0.2)");
     
-    // Create slices with transitions
-    const slices = svg.selectAll(".arc")
-        .data(pie(pieData))
+    // Create legend on the right side
+    const legendX = pieX + pieRadius + 30; // Position legend to the right of the pie
+    const legendY = 30; // Start legend near the top
+    
+    const legend = svg.append("g")
+        .attr("id", "pie-chart-legend")
+        .attr("class", "legend")
+        .attr("transform", `translate(${legendX}, ${legendY})`);
+    
+    // Create legend items
+    const legendItems = legend.selectAll(".legend-item")
+        .data(pieData)
         .enter()
         .append("g")
-        .attr("class", "arc");
+        .attr("class", d => `legend-item legend-item-${d.key.replace(/\s+/g, '-').toLowerCase()}`)
+        .attr("data-country", d => d.key)
+        .attr("transform", (d, i) => `translate(0, ${i * 22})`)
+        .style("cursor", "pointer");
     
-    // Simple helper function to check if a country is selected
-    function isSelected(countryName) {
-        return window.dashboardState && 
-               window.dashboardState.filters && 
-               window.dashboardState.filters.country === countryName;
-    }
-    
-    // Add slice paths with animation
-    const paths = slices.append("path")
-        .attr("fill", d => color(d.data.key))
+    // Add color squares
+    legendItems.append("rect")
+        .attr("width", 12)
+        .attr("height", 12)
+        .attr("rx", 2)
+        .attr("ry", 2)
+        .attr("fill", d => color(d.key))
         .attr("stroke", "#fff")
-        .attr("stroke-width", d => isSelected(d.data.key) ? 2 : 1)
-        .attr("class", d => {
-            let classes = d.data.isSmallSlice ? "small-slice" : "";
-            if (isSelected(d.data.key)) classes += " selected-slice";
-            return classes;
+        .attr("stroke-width", 1);
+    
+    // Add country names
+    legendItems.append("text")
+        .attr("x", 18)
+        .attr("y", 6)
+        .attr("dy", "0.35em")
+        .style("font-size", "11px")
+        .style("fill", "#333")
+        .text(d => d.key);
+    
+    // Add percentages
+    legendItems.append("text")
+        .attr("x", 18)
+        .attr("y", 6)
+        .attr("dy", "0.35em")
+        .attr("dx", d => {
+            // Calculate position based on country name length
+            const countryLength = d.key.length;
+            return countryLength * 6 + 6; // Approximate text width
         })
-        .style("cursor", "pointer")
-        .style("transition", "opacity 0.3s");
+        .style("font-size", "11px")
+        .style("fill", "#666")
+        .text(d => `(${d.percentage.toFixed(1)}%)`);
     
-    // Animate slices on load
-    paths.transition()
-        .duration(800)
-        .attrTween("d", function(d) {
-            const isCountrySelected = isSelected(d.data.key);
-            const interpolate = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
-            return t => isCountrySelected ? hoverArc(interpolate(t)) : arc(interpolate(t));
-        });
-    
-    // Add hover effects
-    paths.on("mouseover", function(event, d) {
-            // Always apply hover effect
-            d3.select(this)
-                .transition()
+    // Function to highlight a specific country
+    function highlightCountry(countryName) {
+        // If no country provided, reset all highlights
+        if (!countryName || countryName === "all") {
+            // Reset all slices
+            paths.transition()
+                .duration(200)
+                .attr("d", arc)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1);
+                
+            // Reset all legend items
+            legendItems.transition()
+                .duration(200)
+                .style("opacity", 1)
+                .select("rect")
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1);
+                
+            return;
+        }
+        
+        // Check for country data mapping
+        const mappingTable = {
+            "United Kingdom": "England",
+            "United States of America": "United States",
+            "Russian Federation": "Russia",
+            "South Korea": "Korea Republic",
+            // Add any other mappings needed for your data
+        };
+        
+        // Normalize country name using mapping if available
+        const normalizedCountry = mappingTable[countryName] || countryName;
+        
+        // Find the matching slice and legend item
+        const matchingSlice = paths.filter(d => d.data.key === normalizedCountry);
+        const matchingLegendItem = legendItems.filter(d => d.key === normalizedCountry);
+        
+        // If the country exists in our data, highlight it
+        if (!matchingSlice.empty()) {
+            // Dim all slices
+            paths.transition()
+                .duration(200)
+                .attr("d", arc)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1)
+                .style("opacity", 0.3);
+                
+            // Highlight the matching slice
+            matchingSlice.transition()
                 .duration(200)
                 .attr("d", hoverArc)
-                .style("filter", "drop-shadow(0 0 3px rgba(0,0,0,0.3))")
-                .attr("stroke-width", 2);
-                
-            // Show tooltip
-            tooltip.transition()
-                .duration(200)
+                .attr("stroke", "#333")
+                .attr("stroke-width", 2)
                 .style("opacity", 1);
                 
-            tooltip.html(`
-                <strong>${d.data.key}</strong><br>
-                Value: ${d.data.value.toLocaleString()}<br>
-                Percentage: ${d.data.percentage.toFixed(1)}%
-            `)
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY - 28) + "px");
-                
-            // Highlight corresponding legend item
-            legendContainer.selectAll(".legend-item")
-                .filter(item => item.key === d.data.key)
-                .style("transform", "scale(1.05)")
-                .style("font-weight", "bold");
-        })
-        .on("mouseout", function(event, d) {
-            // Check if this is the selected country
-            const selected = isSelected(d.data.key);
-            
-            // Apply appropriate styling
-            d3.select(this)
-                .transition()
+            // Dim all legend items
+            legendItems.transition()
                 .duration(200)
-                .attr("d", selected ? hoverArc : arc)
-                .style("filter", selected ? "drop-shadow(0 0 3px rgba(0,0,0,0.3))" : "none")
-                .attr("stroke-width", selected ? 2 : 1);
+                .style("opacity", 0.3)
+                .select("rect")
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1);
                 
-            // Hide tooltip
-            tooltip.transition()
-                .duration(500)
-                .style("opacity", 0);
+            // Highlight the matching legend item
+            matchingLegendItem.transition()
+                .duration(200)
+                .style("opacity", 1)
+                .select("rect")
+                .attr("stroke", "#333")
+                .attr("stroke-width", 1.5);
                 
-            // Reset legend item
-            legendContainer.selectAll(".legend-item")
-                .filter(item => item.key === d.data.key)
-                .style("transform", selected ? "scale(1.05)" : "scale(1)")
-                .style("font-weight", selected ? "bold" : "normal");
-        })
-        .on("click", function(event, d) {
-            // Toggle selection
-            const wasSelected = isSelected(d.data.key);
-            
-            if (window.dashboardState) {
-                // Update dashboard state
-                window.dashboardState.filters.country = wasSelected ? "all" : d.data.key;
+            // Show tooltip for this country
+            if (!matchingSlice.empty()) {
+                const d = matchingSlice.data()[0];
+                tooltip.transition()
+                    .duration(200)
+                    .style("opacity", 0.9);
                 
-                // Update country selector in UI
-                const countrySelector = document.getElementById('country-selector');
-                if (countrySelector) {
-                    countrySelector.value = window.dashboardState.filters.country;
-                }
+                tooltip.html(`
+                    <strong>${d.data.key}</strong><br>
+                    Value: ${d.data.value.toLocaleString()}<br>
+                    Percentage: ${d.data.percentage.toFixed(1)}%
+                `)
+                .style("left", (width / 2) + "px")
+                .style("top", (height / 2 - 50) + "px");
                 
-                // Update other UI components and visualizations
-                if (typeof updateClubSelector === "function") updateClubSelector();
-                if (typeof updateSelectionDetails === "function") updateSelectionDetails();
-                if (typeof updateAllVisualizations === "function") updateAllVisualizations();
-                
-                // Update bar chart
-                if (typeof updateBarChart === "function") {
-                    updateBarChart('#Bar-Chart', window.globalData.matrix_data, window.dashboardState.filters.country);
-                }
+                // Auto-hide tooltip after a few seconds
+                setTimeout(() => {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                }, 3000);
             }
-        });
-    
-    // Add value labels
-    if (showLabels) {
-        // Only add labels to slices above the threshold
-        slices.filter(d => !d.data.isSmallSlice)
-            .append("text")
-            .attr("transform", d => {
-                const pos = labelArc.centroid(d);
-                // Adjust label position based on angle for better placement
-                const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
-                const x = Math.sin(midAngle) * (radius + 10);
-                const y = -Math.cos(midAngle) * (radius + 10);
-                return `translate(${x},${y})`;
-            })
-            .attr("dy", ".35em")
-            .attr("text-anchor", d => {
-                const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
-                return midAngle < Math.PI ? "start" : "end";
-            })
-            .style("font-size", "12px")
-            .style("font-weight", "500")
-            .style("fill", "#333")
-            .style("pointer-events", "none")
-            .style("opacity", 0)
-            .text(d => showPercentages ? `${d.data.percentage.toFixed(1)}%` : d.data.key)
-            .transition()
-            .delay((_, i) => 800 + i * 50)
-            .duration(500)
-            .style("opacity", 1);
-    }
-    
-    // Add connecting lines for labels outside the chart
-    if (showLabels) {
-        slices.filter(d => !d.data.isSmallSlice)
-            .append("polyline")
-            .attr("points", d => {
-                const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2;
-                const pos = labelArc.centroid(d);
-                const x2 = Math.sin(midAngle) * (radius + 8);
-                const y2 = -Math.cos(midAngle) * (radius + 8);
-                const x3 = Math.sin(midAngle) * (radius + 20);
-                const y3 = -Math.cos(midAngle) * (radius + 20);
-                return [arc.centroid(d), [x2, y2], [x3, y3]];
-            })
-            .style("fill", "none")
-            .style("stroke", "#999")
-            .style("stroke-width", 1)
-            .style("opacity", 0)
-            .transition()
-            .delay((_, i) => 800 + i * 50)
-            .duration(500)
-            .style("opacity", 0.5);
-    }
-    
-    // Add center text for total if it's a donut chart
-    if (options.donut) {
-        svg.append("text")
-            .attr("text-anchor", "middle")
-            .attr("dy", "0.35em")
-            .style("font-size", "24px")
-            .style("font-weight", "bold")
-            .style("fill", "#333")
-            .style("opacity", 0)
-            .text(total.toLocaleString())
-            .transition()
-            .delay(800)
-            .duration(400)
-            .style("opacity", 1);
-        
-        svg.append("text")
-            .attr("text-anchor", "middle")
-            .attr("dy", "1.5em")
-            .style("font-size", "14px")
-            .style("fill", "#666")
-            .style("opacity", 0)
-            .text("Total Players")
-            .transition()
-            .delay(1000)
-            .duration(400)
-            .style("opacity", 1);
-    }
-    
-    // Create improved legend
-    const legendContainer = container.append("div")
-        .attr("class", "pie-legend")
-        .style("display", "flex")
-        .style("flex-wrap", "wrap")
-        .style("justify-content", "center")
-        .style("margin-top", "20px");
-    
-    // Create a legend item for each data point
-    pieData.forEach((d, i) => {
-        const isCountrySelected = isSelected(d.key);
-        
-        const legendItem = legendContainer.append("div")
-            .attr("class", "legend-item")
-            .datum(d) // Store the data for easier reference
-            .style("display", "flex")
-            .style("align-items", "center")
-            .style("margin", "5px 10px")
-            .style("cursor", "pointer")
-            .style("transition", "transform 0.2s")
-            .style("transform", isCountrySelected ? "scale(1.05)" : "scale(1)")
-            .style("font-weight", isCountrySelected ? "bold" : "normal")
-            .style("padding", "3px")
-            .style("background-color", isCountrySelected ? "rgba(0,0,0,0.05)" : "transparent")
-            .style("border-radius", "4px")
-            .on("mouseover", function() {
-                // Highlight corresponding slice
-                paths.filter((path) => path.data.key === d.key)
-                    .transition()
-                    .duration(200)
-                    .attr("d", hoverArc)
-                    .style("filter", "drop-shadow(0 0 3px rgba(0,0,0,0.3))")
-                    .attr("stroke-width", 2);
+        } else {
+            // If no match, reset all highlights
+            paths.transition()
+                .duration(200)
+                .attr("d", arc)
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1)
+                .style("opacity", 1);
                 
-                // Highlight legend item
-                d3.select(this)
-                    .style("transform", "scale(1.05)")
-                    .style("font-weight", "bold");
-            })
-            .on("mouseout", function() {
-                // Check if this country is selected
-                const selected = isSelected(d.key);
+            legendItems.transition()
+                .duration(200)
+                .style("opacity", 1)
+                .select("rect")
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1);
                 
-                // Reset slice to appropriate state
-                paths.filter((path) => path.data.key === d.key)
-                    .transition()
-                    .duration(200)
-                    .attr("d", selected ? hoverArc : arc)
-                    .style("filter", selected ? "drop-shadow(0 0 3px rgba(0,0,0,0.3))" : "none")
-                    .attr("stroke-width", selected ? 2 : 1);
-                
-                // Reset legend item to appropriate state
-                d3.select(this)
-                    .style("transform", selected ? "scale(1.05)" : "scale(1)")
-                    .style("font-weight", selected ? "bold" : "normal");
-            })
-            .on("click", function() {
-                // Toggle selection
-                const wasSelected = isSelected(d.key);
-                
-                if (window.dashboardState) {
-                    // Update dashboard state
-                    window.dashboardState.filters.country = wasSelected ? "all" : d.key;
-                    
-                    // Update country selector in UI
-                    const countrySelector = document.getElementById('country-selector');
-                    if (countrySelector) {
-                        countrySelector.value = window.dashboardState.filters.country;
-                    }
-                    
-                    // Update other UI components and visualizations
-                    if (typeof updateClubSelector === "function") updateClubSelector();
-                    if (typeof updateSelectionDetails === "function") updateSelectionDetails();
-                    if (typeof updateAllVisualizations === "function") updateAllVisualizations();
-                    
-                    // Update bar chart
-                    if (typeof updateBarChart === "function") {
-                        updateBarChart('#Bar-Chart', window.globalData.matrix_data, window.dashboardState.filters.country);
-                    }
-                }
-            });
-        
-        // Add color box
-        legendItem.append("div")
-            .style("width", "16px")
-            .style("height", "16px")
-            .style("background", color(d.key))
-            .style("border-radius", "3px")
-            .style("border", isCountrySelected ? "2px solid #333" : "1px solid rgba(0,0,0,0.1)")
-            .style("margin-right", "8px");
-        
-        // Add legend text with value
-        legendItem.append("div")
-            .style("font-size", "13px")
-            .style("display", "flex")
-            .style("flex-direction", "column")
-            .html(`
-                <span style="font-weight: ${isCountrySelected ? "bold" : "500"};">${d.key}</span>
-                <span style="font-size: 11px; color: #666;">${d.percentage.toFixed(1)}% (${d.value.toLocaleString()})</span>
-            `);
-    });
-    
-    // Create a reference to the chart instance for the updateDashboard function
-    if (window.chartInstances === undefined) {
-        window.chartInstances = {};
-    }
-    
-    // Store the chart instance with references to key elements
-    window.chartInstances[selector] = {
-        paths: paths,
-        legendContainer: legendContainer,
-        arc: arc,
-        hoverArc: hoverArc,
-        pieData: pieData
-    };
-    
-    // Return an object with methods for external control
-    return {
-        // Update with new data
-        update: function(newData) {
-            PieChartFromJSON(newData, keyColumn, valueColumn, selector, options);
-        },
-        
-        // Update selection
-        updateSelection: function(selectedCountry) {
-            // Update all paths based on the new selection
-            paths.each(function(d) {
-                const selected = d.data.key === selectedCountry;
-                
-                // Apply appropriate styling
-                d3.select(this)
-                    .transition()
-                    .duration(300)
-                    .attr("d", selected ? hoverArc : arc)
-                    .style("filter", selected ? "drop-shadow(0 0 3px rgba(0,0,0,0.3))" : "none")
-                    .attr("stroke-width", selected ? 2 : 1);
-            });
+            // Show tooltip with "no data" message
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", 0.9);
             
-            // Update legend items
-            legendContainer.selectAll(".legend-item").each(function(d) {
-                const selected = d.key === selectedCountry;
-                
-                // Apply appropriate styling
-                d3.select(this)
-                    .transition()
-                    .duration(300)
-                    .style("transform", selected ? "scale(1.05)" : "scale(1)")
-                    .style("font-weight", selected ? "bold" : "normal")
-                    .style("background-color", selected ? "rgba(0,0,0,0.05)" : "transparent");
-                
-                // Update legend item border
-                d3.select(this).select("div:first-child")
-                    .style("border", selected ? "2px solid #333" : "1px solid rgba(0,0,0,0.1)");
-                
-                // Update legend item text
-                d3.select(this).select("div:last-child span:first-child")
-                    .style("font-weight", selected ? "bold" : "500");
-            });
+            tooltip.html(`
+                <strong>${countryName}</strong><br>
+                No data available for this country
+            `)
+            .style("left", (width / 2) + "px")
+            .style("top", (height / 2 - 50) + "px");
+            
+            // Auto-hide tooltip after a few seconds
+            setTimeout(() => {
+                tooltip.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+            }, 3000);
         }
-    };
-}
-
-// Add an event listener to update the pie chart when the dashboard state changes
-document.addEventListener('DOMContentLoaded', function() {
-    // Create a MutationObserver to watch for changes in the country selector
-    const countrySelector = document.getElementById('country-selector');
-    
-    if (countrySelector) {
-        countrySelector.addEventListener('change', function() {
-            // Update the pie chart based on the new selection
-            updatePieChartFromDashboardState();
-        });
     }
     
-    // Also update when the reset filters button is clicked
-    const resetButton = document.getElementById('reset-filters');
-    if (resetButton) {
-        resetButton.addEventListener('click', function() {
-            // Small delay to ensure the dashboard state is updated first
-            setTimeout(updatePieChartFromDashboardState, 50);
-        });
-    }
-});
-
-// Function to update the pie chart based on the dashboard state
-function updatePieChartFromDashboardState() {
-    if (!window.chartInstances || !window.dashboardState) return;
-    
-    // Get the selected country from the dashboard state
-    const selectedCountry = window.dashboardState.filters.country;
-    const isAllSelected = selectedCountry === "all";
-    
-    // Add console log to show what country is being passed
-    console.log("-------------------------------------------------Pie Chart Update - Selected Country:", selectedCountry, "Is 'all' selected:", isAllSelected);
-    
-    // Update each chart instance
-    Object.keys(window.chartInstances).forEach(selector => {
-        const chart = window.chartInstances[selector];
+    // Add interactivity for pie slices
+    paths.on("mouseover", function(event, d) {
+        // Highlight slice
+        d3.select(this)
+            .transition()
+            .duration(200)
+            .attr("d", hoverArc);
         
-        // Update paths
-        if (chart.paths) {
-            chart.paths.each(function(d) {
-                const selected = !isAllSelected && d.data.key === selectedCountry;
-                
-                // Apply appropriate styling
-                d3.select(this)
-                    .transition()
-                    .duration(300)
-                    .attr("d", selected ? chart.hoverArc : chart.arc)
-                    .style("filter", selected ? "drop-shadow(0 0 3px rgba(0,0,0,0.3))" : "none")
-                    .attr("stroke-width", selected ? 2 : 1);
-            });
-        }
+        // Highlight legend item
+        legendItems.filter(item => item.key === d.data.key)
+            .transition()
+            .duration(200)
+            .style("opacity", 1)
+            .select("rect")
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1.5);
         
-        // Update legend items
-        if (chart.legendContainer) {
-            chart.legendContainer.selectAll(".legend-item").each(function(d) {
-                const selected = !isAllSelected && d.key === selectedCountry;
-                
-                // Apply appropriate styling
-                d3.select(this)
-                    .transition()
-                    .duration(300)
-                    .style("transform", selected ? "scale(1.05)" : "scale(1)")
-                    .style("font-weight", selected ? "bold" : "normal")
-                    .style("background-color", selected ? "rgba(0,0,0,0.05)" : "transparent");
-                
-                // Update legend item border
-                d3.select(this).select("div:first-child")
-                    .style("border", selected ? "2px solid #333" : "1px solid rgba(0,0,0,0.1)");
-                
-                // Update legend item text
-                d3.select(this).select("div:last-child span:first-child")
-                    .style("font-weight", selected ? "bold" : "500");
-            });
+        // Dim other legend items
+        legendItems.filter(item => item.key !== d.data.key)
+            .transition()
+            .duration(200)
+            .style("opacity", 0.6);
+        
+        // Show tooltip
+        tooltip.transition()
+            .duration(200)
+            .style("opacity", 0.9);
+        
+        tooltip.html(`
+            <strong>${d.data.key}</strong><br>
+            Value: ${d.data.value.toLocaleString()}<br>
+            Percentage: ${d.data.percentage.toFixed(1)}%
+        `)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mouseout", function() {
+        // Reset slice
+        d3.select(this)
+            .transition()
+            .duration(200)
+            .attr("d", arc);
+        
+        // Reset legend items
+        legendItems
+            .transition()
+            .duration(200)
+            .style("opacity", 1)
+            .select("rect")
+            .attr("stroke", "#fff")
+            .attr("stroke-width", 1);
+        
+        // Hide tooltip
+        tooltip.transition()
+            .duration(500)
+            .style("opacity", 0);
+    });
+    
+    // Add interactivity for legend items
+    legendItems.on("mouseover", function(event, d) {
+        // Highlight legend item
+        d3.select(this)
+            .transition()
+            .duration(200)
+            .select("rect")
+            .attr("stroke", "#333")
+            .attr("stroke-width", 1.5);
+        
+        // Dim other legend items
+        legendItems.filter(item => item.key !== d.key)
+            .transition()
+            .duration(200)
+            .style("opacity", 0.6);
+        
+        // Find and highlight matching slice
+        const matchingSlice = paths.filter(slice => slice.data.key === d.key);
+        matchingSlice
+            .transition()
+            .duration(200)
+            .attr("d", hoverArc);
+        
+        // Show tooltip
+        tooltip.transition()
+            .duration(200)
+            .style("opacity", 0.9);
+        
+        tooltip.html(`
+            <strong>${d.key}</strong><br>
+            Value: ${d.value.toLocaleString()}<br>
+            Percentage: ${d.percentage.toFixed(1)}%
+        `)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mouseout", function() {
+        // Reset legend items
+        legendItems
+            .transition()
+            .duration(200)
+            .style("opacity", 1)
+            .select("rect")
+            .attr("stroke", "#fff")
+            .attr("stroke-width", 1);
+        
+        // Reset all slices
+        paths
+            .transition()
+            .duration(200)
+            .attr("d", arc);
+        
+        // Hide tooltip
+        tooltip.transition()
+            .duration(500)
+            .style("opacity", 0);
+    })
+    .on("click", function(event, d) {
+        // When a legend item is clicked, trigger the world map selection
+        // This allows bidirectional interaction
+        if (typeof dashboardState !== 'undefined' && dashboardState.filters) {
+            // Update dashboard state
+            dashboardState.filters.country = d.key;
+            
+            // Update country selector if it exists
+            const countrySelector = document.getElementById('country-selector');
+            if (countrySelector) {
+                countrySelector.value = d.key;
+            }
+            
+            // Update bar chart if available
+            if (typeof updateBarChart === 'function') {
+                updateBarChart('#Bar-Chart', globalData.matrix_data, d.key);
+            }
+            
+            // Update UI and all visualizations
+            if (typeof updateSelectionDetails === 'function') {
+                updateSelectionDetails();
+            }
+            
+            if (typeof updateAllVisualizations === 'function') {
+                updateAllVisualizations();
+            }
         }
     });
+    
+    // Return the API object to allow external control
+    return {
+        highlightCountry: highlightCountry,
+        update: function(newData) {
+            // Provide an update method for future use
+            PieChartFromJSON(newData, keyColumn, valueColumn, selector, options);
+        }
+    };
 }

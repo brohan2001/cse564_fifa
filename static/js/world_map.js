@@ -195,6 +195,16 @@ function addZoomControls() {
             // Reset dashboard country filter
             dashboardState.filters.country = "all";
             initBarChart('#Bar-Chart', globalData.matrix_data);
+			pieChartAPI = PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', {
+  width: 700,      // Wider container
+  height: 500,     // Taller container
+  pieSize: 350,    // Larger pie chart
+  // You would need to add these custom options to the function:
+  pieX: 250,       // Custom X position
+  pieY: 200   // Custom Y position
+});
+			
+			
             // Update UI
             const countrySelector = document.getElementById('country-selector');
             if (countrySelector) {
@@ -458,7 +468,17 @@ function renderWorldMap(countryData) {
                 
                 // Reset country filter in dashboard state
                 dashboardState.filters.country = "all";
-                
+pieChartAPI = PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', {
+  width: 700,      // Wider container
+  height: 500,     // Taller container
+  pieSize: 350,    // Larger pie chart
+  // You would need to add these custom options to the function:
+  pieX: 250,       // Custom X position
+  pieY: 200   // Custom Y position
+});
+	initBarChart('#Bar-Chart', globalData.matrix_data);
+        // Update pie chart to reset highlighting
+        updatePieChartFromWorldMap("all");
                 // Update UI
                 const countrySelector = document.getElementById('country-selector');
                 if (countrySelector) {
@@ -482,9 +502,10 @@ function renderWorldMap(countryData) {
                 
 				updateBarChart('#Bar-Chart', globalData.matrix_data,worldMap.selectedCountry );
 
-				
-				
-				
+			
+        
+        // Update pie chart to highlight this country
+        updatePieChartFromWorldMap(dashboardState.filters.country);
                 
 
                 // If there are leagues in this country, optionally show league selection
@@ -797,3 +818,13 @@ function updateWorldMap(filteredData) {
         worldMap.selectedCountry = null;
     }
 }        
+
+
+
+
+
+function updatePieChartFromWorldMap(countryName) {
+    if (pieChartAPI) {
+        pieChartAPI.highlightCountry(countryName);
+    }
+}

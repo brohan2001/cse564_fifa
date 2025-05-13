@@ -479,8 +479,68 @@ let dashboardState = {
     }
 };
 
-// Main initialization function
+
+
+// Initialize global variable to store the pie chart API
+let pieChartAPI = null;
+
+// Modify the initDashboard function to store the pie chart API reference
 async function initDashboard() {
+    try {
+        console.log("Starting dashboard initialization...");
+        
+        // Load all necessary data
+        const dataLoaded = await loadData();
+        
+        if (!dataLoaded) {
+            console.error("Failed to load data, cannot initialize dashboard");
+            return;
+        }
+        
+        // Initialize UI elements
+        initializeFilters();
+        
+        // Initialize visualizations
+        initializeWorldMap();
+        initializePCP();
+        initializeBiplot();
+        initializePlayerProfile();
+        console.log(globalData.countries);
+        
+        
+		// To:
+pieChartAPI = PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', {
+  width: 700,      // Wider container
+  height: 500,     // Taller container
+  pieSize: 350,    // Larger pie chart
+  // You would need to add these custom options to the function:
+  pieX: 250,       // Custom X position
+  pieY: 200   // Custom Y position
+});
+		
+		
+		
+		
+        // Initialize bar chart
+        initBarChart('#Bar-Chart', globalData.matrix_data);
+        
+        // Add event listeners for dashboard coordination
+        setupEventListeners();
+        
+        console.log("Dashboard initialized successfully");
+    } catch (error) {
+        console.error("Error initializing dashboard:", error);
+    }
+}
+
+
+
+
+
+
+
+// Main initialization function
+/* async function initDashboard() {
     try {
         console.log("Starting dashboard initialization...");
         
@@ -503,10 +563,16 @@ async function initDashboard() {
 		console.log(globalData.countries);
 		//PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', { title: 'Players by Country' });
 		// In main.js, change:
-PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', { title: 'Players by Country' });
 
 // To:
-window.pieChartInstance = PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', { title: 'Players by Country' });
+window.pieChartInstance = PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', {
+  width: 700,      // Wider container
+  height: 500,     // Taller container
+  pieSize: 350,    // Larger pie chart
+  // You would need to add these custom options to the function:
+  pieX: 250,       // Custom X position
+  pieY: 200   // Custom Y position
+});
 		
 		initBarChart('#Bar-Chart', globalData.matrix_data);
 		
@@ -517,7 +583,7 @@ window.pieChartInstance = PieChartFromJSON(globalData.countries, 'country', 'per
     } catch (error) {
         console.error("Error initializing dashboard:", error);
     }
-}
+} */
 
 // Load data from the API with error handling
 async function loadData() {
