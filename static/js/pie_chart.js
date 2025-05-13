@@ -133,7 +133,7 @@ function PieChartFromJSON(jsonData, keyColumn, valueColumn, selector, options = 
         .innerRadius(radius * 0.8)
         .outerRadius(radius * 1.2);
     
-    // Arc generator for hover effect
+    // Arc generator for hover/selected effect
     const hoverArc = d3.arc()
         .innerRadius(innerRadius)
         .outerRadius(radius * 1.05)
@@ -162,32 +162,44 @@ function PieChartFromJSON(jsonData, keyColumn, valueColumn, selector, options = 
         .append("g")
         .attr("class", "arc");
     
+    // Simple helper function to check if a country is selected
+    function isSelected(countryName) {
+        return window.dashboardState && 
+               window.dashboardState.filters && 
+               window.dashboardState.filters.country === countryName;
+    }
+    
     // Add slice paths with animation
     const paths = slices.append("path")
         .attr("fill", d => color(d.data.key))
         .attr("stroke", "#fff")
-        .attr("stroke-width", 1)
-        .attr("class", d => d.data.isSmallSlice ? "small-slice" : "")
+        .attr("stroke-width", d => isSelected(d.data.key) ? 2 : 1)
+        .attr("class", d => {
+            let classes = d.data.isSmallSlice ? "small-slice" : "";
+            if (isSelected(d.data.key)) classes += " selected-slice";
+            return classes;
+        })
         .style("cursor", "pointer")
-        .style("transition", "opacity 0.3s")
-        .each(function(d) { this._current = d; }); // Store initial angles
+        .style("transition", "opacity 0.3s");
     
     // Animate slices on load
     paths.transition()
         .duration(800)
         .attrTween("d", function(d) {
+            const isCountrySelected = isSelected(d.data.key);
             const interpolate = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
-            return t => arc(interpolate(t));
+            return t => isCountrySelected ? hoverArc(interpolate(t)) : arc(interpolate(t));
         });
     
     // Add hover effects
     paths.on("mouseover", function(event, d) {
-            // Highlight the slice
+            // Always apply hover effect
             d3.select(this)
                 .transition()
                 .duration(200)
                 .attr("d", hoverArc)
-                .style("filter", "drop-shadow(0 0 3px rgba(0,0,0,0.3))");
+                .style("filter", "drop-shadow(0 0 3px rgba(0,0,0,0.3))")
+                .attr("stroke-width", 2);
                 
             // Show tooltip
             tooltip.transition()
@@ -201,19 +213,60 @@ function PieChartFromJSON(jsonData, keyColumn, valueColumn, selector, options = 
             `)
                 .style("left", (event.pageX + 10) + "px")
                 .style("top", (event.pageY - 28) + "px");
+                
+            // Highlight corresponding legend item
+            legendContainer.selectAll(".legend-item")
+                .filter(item => item.key === d.data.key)
+                .style("transform", "scale(1.05)")
+                .style("font-weight", "bold");
         })
-        .on("mouseout", function() {
-            // Restore original slice size
+        .on("mouseout", function(event, d) {
+            // Check if this is the selected country
+            const selected = isSelected(d.data.key);
+            
+            // Apply appropriate styling
             d3.select(this)
                 .transition()
                 .duration(200)
-                .attr("d", arc)
-                .style("filter", "none");
+                .attr("d", selected ? hoverArc : arc)
+                .style("filter", selected ? "drop-shadow(0 0 3px rgba(0,0,0,0.3))" : "none")
+                .attr("stroke-width", selected ? 2 : 1);
                 
             // Hide tooltip
             tooltip.transition()
                 .duration(500)
                 .style("opacity", 0);
+                
+            // Reset legend item
+            legendContainer.selectAll(".legend-item")
+                .filter(item => item.key === d.data.key)
+                .style("transform", selected ? "scale(1.05)" : "scale(1)")
+                .style("font-weight", selected ? "bold" : "normal");
+        })
+        .on("click", function(event, d) {
+            // Toggle selection
+            const wasSelected = isSelected(d.data.key);
+            
+            if (window.dashboardState) {
+                // Update dashboard state
+                window.dashboardState.filters.country = wasSelected ? "all" : d.data.key;
+                
+                // Update country selector in UI
+                const countrySelector = document.getElementById('country-selector');
+                if (countrySelector) {
+                    countrySelector.value = window.dashboardState.filters.country;
+                }
+                
+                // Update other UI components and visualizations
+                if (typeof updateClubSelector === "function") updateClubSelector();
+                if (typeof updateSelectionDetails === "function") updateSelectionDetails();
+                if (typeof updateAllVisualizations === "function") updateAllVisualizations();
+                
+                // Update bar chart
+                if (typeof updateBarChart === "function") {
+                    updateBarChart('#Bar-Chart', window.globalData.matrix_data, window.dashboardState.filters.country);
+                }
+            }
         });
     
     // Add value labels
@@ -307,35 +360,76 @@ function PieChartFromJSON(jsonData, keyColumn, valueColumn, selector, options = 
     
     // Create a legend item for each data point
     pieData.forEach((d, i) => {
+        const isCountrySelected = isSelected(d.key);
+        
         const legendItem = legendContainer.append("div")
+            .attr("class", "legend-item")
+            .datum(d) // Store the data for easier reference
             .style("display", "flex")
             .style("align-items", "center")
             .style("margin", "5px 10px")
             .style("cursor", "pointer")
             .style("transition", "transform 0.2s")
+            .style("transform", isCountrySelected ? "scale(1.05)" : "scale(1)")
+            .style("font-weight", isCountrySelected ? "bold" : "normal")
+            .style("padding", "3px")
+            .style("background-color", isCountrySelected ? "rgba(0,0,0,0.05)" : "transparent")
+            .style("border-radius", "4px")
             .on("mouseover", function() {
                 // Highlight corresponding slice
-                paths.filter((path, j) => path.data.key === d.key)
+                paths.filter((path) => path.data.key === d.key)
                     .transition()
                     .duration(200)
                     .attr("d", hoverArc)
-                    .style("filter", "drop-shadow(0 0 3px rgba(0,0,0,0.3))");
+                    .style("filter", "drop-shadow(0 0 3px rgba(0,0,0,0.3))")
+                    .attr("stroke-width", 2);
                 
                 // Highlight legend item
                 d3.select(this)
-                    .style("transform", "scale(1.05)");
+                    .style("transform", "scale(1.05)")
+                    .style("font-weight", "bold");
             })
             .on("mouseout", function() {
-                // Reset slice
-                paths.filter((path, j) => path.data.key === d.key)
+                // Check if this country is selected
+                const selected = isSelected(d.key);
+                
+                // Reset slice to appropriate state
+                paths.filter((path) => path.data.key === d.key)
                     .transition()
                     .duration(200)
-                    .attr("d", arc)
-                    .style("filter", "none");
+                    .attr("d", selected ? hoverArc : arc)
+                    .style("filter", selected ? "drop-shadow(0 0 3px rgba(0,0,0,0.3))" : "none")
+                    .attr("stroke-width", selected ? 2 : 1);
                 
-                // Reset legend item
+                // Reset legend item to appropriate state
                 d3.select(this)
-                    .style("transform", "scale(1)");
+                    .style("transform", selected ? "scale(1.05)" : "scale(1)")
+                    .style("font-weight", selected ? "bold" : "normal");
+            })
+            .on("click", function() {
+                // Toggle selection
+                const wasSelected = isSelected(d.key);
+                
+                if (window.dashboardState) {
+                    // Update dashboard state
+                    window.dashboardState.filters.country = wasSelected ? "all" : d.key;
+                    
+                    // Update country selector in UI
+                    const countrySelector = document.getElementById('country-selector');
+                    if (countrySelector) {
+                        countrySelector.value = window.dashboardState.filters.country;
+                    }
+                    
+                    // Update other UI components and visualizations
+                    if (typeof updateClubSelector === "function") updateClubSelector();
+                    if (typeof updateSelectionDetails === "function") updateSelectionDetails();
+                    if (typeof updateAllVisualizations === "function") updateAllVisualizations();
+                    
+                    // Update bar chart
+                    if (typeof updateBarChart === "function") {
+                        updateBarChart('#Bar-Chart', window.globalData.matrix_data, window.dashboardState.filters.country);
+                    }
+                }
             });
         
         // Add color box
@@ -344,7 +438,7 @@ function PieChartFromJSON(jsonData, keyColumn, valueColumn, selector, options = 
             .style("height", "16px")
             .style("background", color(d.key))
             .style("border-radius", "3px")
-            .style("border", "1px solid rgba(0,0,0,0.1)")
+            .style("border", isCountrySelected ? "2px solid #333" : "1px solid rgba(0,0,0,0.1)")
             .style("margin-right", "8px");
         
         // Add legend text with value
@@ -353,15 +447,144 @@ function PieChartFromJSON(jsonData, keyColumn, valueColumn, selector, options = 
             .style("display", "flex")
             .style("flex-direction", "column")
             .html(`
-                <span style="font-weight: 500;">${d.key}</span>
+                <span style="font-weight: ${isCountrySelected ? "bold" : "500"};">${d.key}</span>
                 <span style="font-size: 11px; color: #666;">${d.percentage.toFixed(1)}% (${d.value.toLocaleString()})</span>
             `);
     });
     
+    // Create a reference to the chart instance for the updateDashboard function
+    if (window.chartInstances === undefined) {
+        window.chartInstances = {};
+    }
+    
+    // Store the chart instance with references to key elements
+    window.chartInstances[selector] = {
+        paths: paths,
+        legendContainer: legendContainer,
+        arc: arc,
+        hoverArc: hoverArc,
+        pieData: pieData
+    };
+    
+    // Return an object with methods for external control
     return {
+        // Update with new data
         update: function(newData) {
-            // Provide an update method for future use
             PieChartFromJSON(newData, keyColumn, valueColumn, selector, options);
+        },
+        
+        // Update selection
+        updateSelection: function(selectedCountry) {
+            // Update all paths based on the new selection
+            paths.each(function(d) {
+                const selected = d.data.key === selectedCountry;
+                
+                // Apply appropriate styling
+                d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .attr("d", selected ? hoverArc : arc)
+                    .style("filter", selected ? "drop-shadow(0 0 3px rgba(0,0,0,0.3))" : "none")
+                    .attr("stroke-width", selected ? 2 : 1);
+            });
+            
+            // Update legend items
+            legendContainer.selectAll(".legend-item").each(function(d) {
+                const selected = d.key === selectedCountry;
+                
+                // Apply appropriate styling
+                d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .style("transform", selected ? "scale(1.05)" : "scale(1)")
+                    .style("font-weight", selected ? "bold" : "normal")
+                    .style("background-color", selected ? "rgba(0,0,0,0.05)" : "transparent");
+                
+                // Update legend item border
+                d3.select(this).select("div:first-child")
+                    .style("border", selected ? "2px solid #333" : "1px solid rgba(0,0,0,0.1)");
+                
+                // Update legend item text
+                d3.select(this).select("div:last-child span:first-child")
+                    .style("font-weight", selected ? "bold" : "500");
+            });
         }
     };
+}
+
+// Add an event listener to update the pie chart when the dashboard state changes
+document.addEventListener('DOMContentLoaded', function() {
+    // Create a MutationObserver to watch for changes in the country selector
+    const countrySelector = document.getElementById('country-selector');
+    
+    if (countrySelector) {
+        countrySelector.addEventListener('change', function() {
+            // Update the pie chart based on the new selection
+            updatePieChartFromDashboardState();
+        });
+    }
+    
+    // Also update when the reset filters button is clicked
+    const resetButton = document.getElementById('reset-filters');
+    if (resetButton) {
+        resetButton.addEventListener('click', function() {
+            // Small delay to ensure the dashboard state is updated first
+            setTimeout(updatePieChartFromDashboardState, 50);
+        });
+    }
+});
+
+// Function to update the pie chart based on the dashboard state
+function updatePieChartFromDashboardState() {
+    if (!window.chartInstances || !window.dashboardState) return;
+    
+    // Get the selected country from the dashboard state
+    const selectedCountry = window.dashboardState.filters.country;
+    const isAllSelected = selectedCountry === "all";
+    
+    // Add console log to show what country is being passed
+    console.log("-------------------------------------------------Pie Chart Update - Selected Country:", selectedCountry, "Is 'all' selected:", isAllSelected);
+    
+    // Update each chart instance
+    Object.keys(window.chartInstances).forEach(selector => {
+        const chart = window.chartInstances[selector];
+        
+        // Update paths
+        if (chart.paths) {
+            chart.paths.each(function(d) {
+                const selected = !isAllSelected && d.data.key === selectedCountry;
+                
+                // Apply appropriate styling
+                d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .attr("d", selected ? chart.hoverArc : chart.arc)
+                    .style("filter", selected ? "drop-shadow(0 0 3px rgba(0,0,0,0.3))" : "none")
+                    .attr("stroke-width", selected ? 2 : 1);
+            });
+        }
+        
+        // Update legend items
+        if (chart.legendContainer) {
+            chart.legendContainer.selectAll(".legend-item").each(function(d) {
+                const selected = !isAllSelected && d.key === selectedCountry;
+                
+                // Apply appropriate styling
+                d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .style("transform", selected ? "scale(1.05)" : "scale(1)")
+                    .style("font-weight", selected ? "bold" : "normal")
+                    .style("background-color", selected ? "rgba(0,0,0,0.05)" : "transparent");
+                
+                // Update legend item border
+                d3.select(this).select("div:first-child")
+                    .style("border", selected ? "2px solid #333" : "1px solid rgba(0,0,0,0.1)");
+                
+                // Update legend item text
+                d3.select(this).select("div:last-child span:first-child")
+                    .style("font-weight", selected ? "bold" : "500");
+            });
+        }
+    });
 }

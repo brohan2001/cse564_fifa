@@ -501,7 +501,13 @@ async function initDashboard() {
         initializeBiplot();
         initializePlayerProfile();
 		console.log(globalData.countries);
-		PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', { title: 'Players by Country' });
+		//PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', { title: 'Players by Country' });
+		// In main.js, change:
+PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', { title: 'Players by Country' });
+
+// To:
+window.pieChartInstance = PieChartFromJSON(globalData.countries, 'country', 'percentage_of_players', '#piechart', { title: 'Players by Country' });
+		
 		initBarChart('#Bar-Chart', globalData.matrix_data);
 		
         // Add event listeners for dashboard coordination
