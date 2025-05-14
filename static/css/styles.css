@@ -261,8 +261,9 @@ footer {
     stroke: #f4b223;
     stroke-width: 2px;
 }
-
 #radar-chart .radar-circle {
     fill: none;
-    stroke: #ddd;
+    stroke: #777;              /* Darker grid lines */
+    stroke-width: 1.5;         /* Thicker lines */
+    stroke-dasharray: 2,2;     /* Optional: adjusted dash pattern */
 }
