@@ -116,36 +116,203 @@ function updateDimensions() {
     }
 }
 
-// Add controls for PCP
+// // Add controls for PCP
+// function addPCPControls() {
+//     try {
+//         const controlContainer = d3.select('#pcp-container')
+//             .append('div')
+//             .attr('class', 'pcp-controls')
+//             .style('position', 'absolute')
+//             .style('bottom', '10px')
+//             .style('left', '10px')
+//             .style('right', '10px')
+//             .style('z-index', '10')
+//             .style('display', 'flex')
+//             .style('flex-direction', 'row')
+//             .style('justify-content', 'space-between')
+//             .style('align-items', 'center')
+//             .style('background-color', 'rgba(255,255,255,0.8)')
+//             .style('padding', '5px')
+//             .style('border-radius', '4px');
+        
+//         // Add toggle button for club mode
+//         controlContainer.append('button')
+//             .attr('id', 'toggle-pcp-mode')
+//             .attr('class', 'pcp-control-button')
+//             .style('padding', '5px 10px')
+//             .style('border-radius', '4px')
+//             .style('background-color', '#0f53a6')
+//             .style('color', 'white')
+//             .style('border', 'none')
+//             .style('cursor', 'pointer')
+//             .style('margin-right', '5px')
+//             .text('Show Club Averages')
+//             .on('click', function() {
+//                 pcp.clubMode = !pcp.clubMode;
+//                 this.textContent = pcp.clubMode ? 'Show Players' : 'Show Club Averages';
+                
+//                 // Reset highlight when changing views
+//                 if (!pcp.isBrushing) {
+//                     pcp.highlightedPlayerId = null;
+//                 }
+                
+//                 if (pcp.clubMode) {
+//                     updatePCP(globalData.clubs);
+//                 } else {
+//                     updatePCP(filterData());
+//                 }
+//             });
+            
+//         // Add sample toggle button
+//         controlContainer.append('button')
+//             .attr('id', 'toggle-pcp-sample')
+//             .attr('class', 'pcp-control-button')
+//             .style('padding', '5px 10px')
+//             .style('border-radius', '4px')
+//             .style('background-color', '#666')
+//             .style('color', 'white')
+//             .style('border', 'none')
+//             .style('cursor', 'pointer')
+//             .text('Sample 100 Lines')
+//             .on('click', function() {
+//                 pcp.sampleMode = !pcp.sampleMode;
+//                 this.textContent = pcp.sampleMode ? 'Show All Lines' : 'Sample 100 Lines';
+//                 this.style.backgroundColor = pcp.sampleMode ? '#32cd32' : '#666';
+                
+//                 // Reset highlight when changing sampling
+//                 if (!pcp.isBrushing) {
+//                     pcp.highlightedPlayerId = null;
+//                 }
+                
+//                 if (pcp.clubMode) {
+//                     updatePCP(globalData.clubs);
+//                 } else {
+//                     updatePCP(filterData());
+//                 }
+//             });
+        
+//         // Add dimension selector
+//         controlContainer.append('select')
+//             .attr('id', 'pcp-dimension-selector')
+//             .style('margin-left', '10px')
+//             .style('padding', '5px')
+//             .style('border-radius', '4px')
+//             .style('border', '1px solid #ccc')
+//             .on('change', function() {
+//                 const dimension = this.value;
+//                 const index = pcp.dimensions.indexOf(dimension);
+                
+//                 if (index === -1) {
+//                     const essentialDimensions = ['player_overall', 'pace', 'shooting'];
+                    
+//                     for (let i = pcp.dimensions.length - 1; i >= 0; i--) {
+//                         if (!essentialDimensions.includes(pcp.dimensions[i])) {
+//                             pcp.dimensions[i] = dimension;
+//                             break;
+//                         }
+//                     }
+//                 }
+                
+//                 // Reset axis filters when changing dimensions
+//                 pcp.axisFilters = {};
+                
+//                 // Reset highlight when changing dimensions
+//                 if (!pcp.isBrushing) {
+//                     pcp.highlightedPlayerId = null;
+//                 }
+                
+//                 if (pcp.clubMode) {
+//                     updatePCP(globalData.clubs);
+//                 } else {
+//                     updatePCP(filterData());
+//                 }
+//             })
+//             .selectAll('option')
+//             .data([
+//                 'player_overall', 'pace', 'shooting', 'passing', 'dribbling', 'defending', 'physic',
+//                 'age', 'height_cm', 'weight_kg', 'value_millions_eur', 'wage_thousands_eur', 
+//                 'potential', 'skill_moves', 'weak_foot', 'international_reputation'
+//             ])
+//             .enter()
+//             .append('option')
+//             .attr('value', d => d)
+//             .text(d => {
+//                 // Special case for player_overall
+//                 if (d === 'player_overall') {
+//                     return 'Overall';
+//                 }
+                
+//                 // Standard handling for all other dimensions
+//                 return d.split('_')
+//                         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+//                         .join(' ');
+//             });
+        
+//         // Add a "Reset Filters" button for axis filters
+//         controlContainer.append('button')
+//             .attr('id', 'reset-axis-filters')
+//             .attr('class', 'pcp-control-button')
+//             .style('padding', '5px 10px')
+//             .style('border-radius', '4px')
+//             .style('background-color', '#f44336')
+//             .style('color', 'white')
+//             .style('border', 'none')
+//             .style('cursor', 'pointer')
+//             .style('margin-left', '10px')
+//             .text('Reset Axis Filters')
+//             .on('click', function() {
+//                 pcp.axisFilters = {};
+                
+//                 // Reset highlight when clearing filters
+//                 if (!pcp.isBrushing) {
+//                     pcp.highlightedPlayerId = null;
+//                 }
+                
+//                 // Update visualization
+//                 if (pcp.clubMode) {
+//                     updatePCP(globalData.clubs);
+//                 } else {
+//                     updatePCP(filterData());
+//                 }
+                
+//                 // Update other visualizations
+//                 updateAllVisualizations();
+//             });
+//     } catch (error) {
+//         console.error("Error adding PCP controls:", error);
+//     }
+// }
 function addPCPControls() {
     try {
+        // Position controls at the very bottom of the container
         const controlContainer = d3.select('#pcp-container')
             .append('div')
             .attr('class', 'pcp-controls')
             .style('position', 'absolute')
-            .style('bottom', '10px')
-            .style('left', '10px')
-            .style('right', '10px')
+            .style('bottom', '5px')  // Changed from 'top' to 'bottom'
+            .style('right', '5px')   // Reduced right margin
+            .style('left', '5px')    // Added left positioning
             .style('z-index', '10')
             .style('display', 'flex')
-            .style('flex-direction', 'row')
             .style('justify-content', 'space-between')
-            .style('align-items', 'center')
-            .style('background-color', 'rgba(255,255,255,0.8)')
-            .style('padding', '5px')
-            .style('border-radius', '4px');
+            .style('background', 'rgba(255,255,255,0.7)')
+            .style('border-radius', '4px')
+            .style('padding', '3px')
+            .style('box-shadow', '0 1px 3px rgba(0,0,0,0.1)')
+            .style('font-size', '10px'); // Smaller font
         
-        // Add toggle button for club mode
+        // Add toggle button for club mode - make compact
         controlContainer.append('button')
             .attr('id', 'toggle-pcp-mode')
             .attr('class', 'pcp-control-button')
-            .style('padding', '5px 10px')
-            .style('border-radius', '4px')
+            .style('padding', '2px 4px') // Reduced padding
+            .style('border-radius', '3px')
             .style('background-color', '#0f53a6')
             .style('color', 'white')
             .style('border', 'none')
             .style('cursor', 'pointer')
-            .style('margin-right', '5px')
+            .style('margin-right', '2px')
+            .style('font-size', '10px') // Smaller font
             .text('Show Club Averages')
             .on('click', function() {
                 pcp.clubMode = !pcp.clubMode;
@@ -167,12 +334,13 @@ function addPCPControls() {
         controlContainer.append('button')
             .attr('id', 'toggle-pcp-sample')
             .attr('class', 'pcp-control-button')
-            .style('padding', '5px 10px')
-            .style('border-radius', '4px')
+            .style('padding', '2px 4px') // Reduced padding
+            .style('border-radius', '3px')
             .style('background-color', '#666')
             .style('color', 'white')
             .style('border', 'none')
             .style('cursor', 'pointer')
+            .style('font-size', '10px') // Smaller font
             .text('Sample 100 Lines')
             .on('click', function() {
                 pcp.sampleMode = !pcp.sampleMode;
@@ -191,13 +359,23 @@ function addPCPControls() {
                 }
             });
         
-        // Add dimension selector
-        controlContainer.append('select')
+        // Add dimension selector in more compact form
+        const selectContainer = controlContainer.append('span')
+            .style('display', 'flex')
+            .style('align-items', 'center');
+            
+        selectContainer.append('label')
+            .style('margin-right', '3px')
+            .style('font-size', '10px')
+            .text('Attribute:');
+            
+        selectContainer.append('select')
             .attr('id', 'pcp-dimension-selector')
-            .style('margin-left', '10px')
-            .style('padding', '5px')
-            .style('border-radius', '4px')
+            .style('padding', '2px')
+            .style('font-size', '10px')
+            .style('border-radius', '3px')
             .style('border', '1px solid #ccc')
+            .style('width', '80px')
             .on('change', function() {
                 const dimension = this.value;
                 const index = pcp.dimensions.indexOf(dimension);
@@ -237,29 +415,23 @@ function addPCPControls() {
             .append('option')
             .attr('value', d => d)
             .text(d => {
-                // Special case for player_overall
-                if (d === 'player_overall') {
-                    return 'Overall';
-                }
-                
-                // Standard handling for all other dimensions
                 return d.split('_')
                         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                         .join(' ');
             });
         
-        // Add a "Reset Filters" button for axis filters
+        // Add a more compact "Reset Filters" button
         controlContainer.append('button')
             .attr('id', 'reset-axis-filters')
             .attr('class', 'pcp-control-button')
-            .style('padding', '5px 10px')
-            .style('border-radius', '4px')
+            .style('padding', '2px 4px')
+            .style('border-radius', '3px')
             .style('background-color', '#f44336')
             .style('color', 'white')
             .style('border', 'none')
             .style('cursor', 'pointer')
-            .style('margin-left', '10px')
-            .text('Reset Axis Filters')
+            .style('font-size', '10px')
+            .text('Reset Filters')
             .on('click', function() {
                 pcp.axisFilters = {};
                 
@@ -282,6 +454,8 @@ function addPCPControls() {
         console.error("Error adding PCP controls:", error);
     }
 }
+
+
 
 // Format dimension name for display
 // function formatDimensionName(dimension) {
@@ -1135,48 +1309,341 @@ function addAxisFilterNotice() {
     }
 }
 
-// Add legend to PCP
+// // Add legend to PCP
+// function addPCPLegend(groups) {
+//     try {
+//         if (pcp.sampleMode) {
+//             // pcp.svg.append('text')
+//             //     .attr('class', 'sample-indicator')
+//             //     .attr('x', pcp.width / 2)
+//             //     .attr('y', -5)
+//             //     .attr('text-anchor', 'middle')
+//             //     .attr('font-size', '12px')
+//             //     .attr('fill', '#666')
+//             //     .attr('font-style', 'italic')
+//             //     .text(`Showing random sample of ${pcp.sampleSize} lines`);
+//         }
+        
+//         const legendWidth = pcp.width;
+        
+//         const legend = pcp.svg.append('g')
+//             .attr('class', 'pcp-legend')
+//             .attr('transform', `translate(0, ${pcp.height + 5})`);
+        
+//         legend.append('rect')
+//             .attr('width', legendWidth)
+//             .attr('height', pcp.legendHeight - 10)
+//             .attr('fill', 'white')
+//             .attr('opacity', 0.7)
+//             .attr('rx', 5)
+//             .attr('ry', 5);
+
+//         legend.append('text')
+//             .attr('x', 10)
+//             .attr('y', 20)
+//             .style('font-size', '12px')
+//             .style('font-weight', 'bold')
+//             .text(pcp.clubMode ? 'Leagues' : 'Position Groups');
+        
+//         legend.append('text')
+//             .attr('x', legendWidth - 120)
+//             .attr('y', 20)
+//             .style('font-size', '10px')
+//             .style('font-style', 'italic')
+//             .text('Click to filter');
+        
+//         // Validate groups
+//         if (!groups || !Array.isArray(groups) || groups.length === 0) {
+//             groups = pcp.clubMode ? ["Unknown League"] : ["Goalkeeper", "Defender", "Midfielder", "Attacker"];
+//         }
+        
+//         // Ensure we have a safe number of groups for legend
+//         const displayGroups = groups.slice(0, Math.min(groups.length, 10));
+        
+//         const itemWidth = Math.min(130, legendWidth / Math.max(1, displayGroups.length));
+        
+//         const itemsGroup = legend.append('g')
+//             .attr('transform', 'translate(5, 25)');
+            
+//         displayGroups.forEach((group, i) => {
+//             // Skip empty groups
+//             if (!group) return;
+            
+//             let isSelected = false;
+            
+//             if (pcp.clubMode) {
+//                 isSelected = (dashboardState.filters.league === group);
+//             } else {
+//                 const selectedPosition = dashboardState.filters.position;
+//                 if (selectedPosition !== 'all') {
+//                     const selectedGroup = mapPositionToGroup(selectedPosition);
+//                     isSelected = (selectedGroup === group);
+//                 }
+//             }
+            
+//             const item = itemsGroup.append('g')
+//                 .attr('transform', `translate(${i * itemWidth}, 0)`)
+//                 .style('cursor', 'pointer')
+//                 .on('click', function() {
+//                     try {
+//                         if (!pcp.isBrushing) {
+//                             pcp.highlightedPlayerId = null;
+//                         }
+                        
+//                         if (pcp.clubMode) {
+//                             if (dashboardState.filters.league === group) {
+//                                 dashboardState.filters.league = 'all';
+//                             } else {
+//                                 dashboardState.filters.league = group;
+//                             }
+//                             const selector = document.getElementById('league-selector');
+//                             if (selector) selector.value = dashboardState.filters.league;
+//                         } else {
+//                             const positions = Object.entries(pcp.positionGroups)
+//                                 .filter(([pos, posGroup]) => posGroup === group)
+//                                 .map(([pos]) => pos);
+                            
+//                             if (positions.length > 0) {
+//                                 const firstPosition = positions[0];
+                                
+//                                 if (dashboardState.filters.position === firstPosition) {
+//                                     dashboardState.filters.position = 'all';
+//                                 } else {
+//                                     dashboardState.filters.position = firstPosition;
+//                                 }
+                                
+//                                 const selector = document.getElementById('position-selector');
+//                                 if (selector) selector.value = dashboardState.filters.position;
+//                             }
+//                         }
+                        
+//                         updateSelectionDetails();
+//                         setTimeout(() => {
+//                             updateAllVisualizations();
+//                         }, 0);
+//                     } catch (error) {
+//                         console.error("Error in legend click event:", error);
+//                     }
+//                 });
+            
+//             if (isSelected) {
+//                 item.append('rect')
+//                     .attr('width', itemWidth - 10)
+//                     .attr('height', 22)
+//                     .attr('x', -5)
+//                     .attr('y', -15)
+//                     .attr('fill', '#f0f0f0')
+//                     .attr('rx', 4)
+//                     .attr('ry', 4);
+//             }
+            
+//             item.append('rect')
+//                 .attr('width', 14)
+//                 .attr('height', 14)
+//                 .attr('fill', pcp.colorScale(group))
+//                 .attr('stroke', isSelected ? '#000' : 'none')
+//                 .attr('stroke-width', isSelected ? 1.5 : 0);
+            
+//             item.append('text')
+//                 .attr('x', 20)
+//                 .attr('y', 12)
+//                 .style('font-size', '12px')
+//                 .style('font-weight', isSelected ? 'bold' : 'normal')
+//                 .text(group);
+//         });
+//     } catch (error) {
+//         console.error("Error adding PCP legend:", error);
+//     }
+// }
+// function addPCPLegend(groups) {
+//     try {
+//         if (pcp.sampleMode) {
+//             pcp.svg.append('text')
+//                 .attr('class', 'sample-indicator')
+//                 .attr('x', pcp.width / 2)
+//                 .attr('y', -5)
+//                 .attr('text-anchor', 'middle')
+//                 .attr('font-size', '9px') // Smaller font
+//                 .attr('fill', '#666')
+//                 .attr('font-style', 'italic')
+//                 .text(`Showing sample of ${pcp.sampleSize} lines`);
+//         }
+        
+//         const legendWidth = pcp.width;
+        
+//         // Move legend to bottom of chart and make it smaller
+//         const legend = pcp.svg.append('g')
+//             .attr('class', 'pcp-legend')
+//             .attr('transform', `translate(0, ${pcp.height + 2})`); // Reduced gap
+        
+//         // Make legend background smaller and more transparent
+//         legend.append('rect')
+//             .attr('width', legendWidth)
+//             .attr('height', 20) // Reduced height
+//             .attr('fill', 'white')
+//             .attr('opacity', 0.5) // More transparent
+//             .attr('rx', 3)
+//             .attr('ry', 3);
+
+//         // Reduced title text and moved left
+//         legend.append('text')
+//             .attr('x', 5)
+//             .attr('y', 12)
+//             .style('font-size', '9px')
+//             .style('font-weight', 'bold')
+//             .text(pcp.clubMode ? 'Leagues' : 'Position Groups');
+        
+//         // Remove click instructions to save space
+        
+//         // Validate groups
+//         if (!groups || !Array.isArray(groups) || groups.length === 0) {
+//             groups = pcp.clubMode ? ["Unknown League"] : ["Goalkeeper", "Defender", "Midfielder", "Attacker"];
+//         }
+        
+//         // Ensure we have a safe number of groups for legend
+//         const displayGroups = groups.slice(0, Math.min(groups.length, 4));
+        
+//         const itemWidth = Math.min(80, legendWidth / Math.max(1, displayGroups.length));
+        
+//         const itemsGroup = legend.append('g')
+//             .attr('transform', 'translate(70, 5)'); // Position items after title
+            
+//         displayGroups.forEach((group, i) => {
+//             // Skip empty groups
+//             if (!group) return;
+            
+//             let isSelected = false;
+            
+//             if (pcp.clubMode) {
+//                 isSelected = (dashboardState.filters.league === group);
+//             } else {
+//                 const selectedPosition = dashboardState.filters.position;
+//                 if (selectedPosition !== 'all') {
+//                     const selectedGroup = mapPositionToGroup(selectedPosition);
+//                     isSelected = (selectedGroup === group);
+//                 }
+//             }
+            
+//             const item = itemsGroup.append('g')
+//                 .attr('transform', `translate(${i * (itemWidth)}, 0)`)
+//                 .style('cursor', 'pointer')
+//                 .on('click', function() {
+//                     try {
+//                         if (!pcp.isBrushing) {
+//                             pcp.highlightedPlayerId = null;
+//                         }
+                        
+//                         if (pcp.clubMode) {
+//                             if (dashboardState.filters.league === group) {
+//                                 dashboardState.filters.league = 'all';
+//                             } else {
+//                                 dashboardState.filters.league = group;
+//                             }
+//                             const selector = document.getElementById('league-selector');
+//                             if (selector) selector.value = dashboardState.filters.league;
+//                         } else {
+//                             const positions = Object.entries(pcp.positionGroups)
+//                                 .filter(([pos, posGroup]) => posGroup === group)
+//                                 .map(([pos]) => pos);
+                            
+//                             if (positions.length > 0) {
+//                                 const firstPosition = positions[0];
+                                
+//                                 if (dashboardState.filters.position === firstPosition) {
+//                                     dashboardState.filters.position = 'all';
+//                                 } else {
+//                                     dashboardState.filters.position = firstPosition;
+//                                 }
+                                
+//                                 const selector = document.getElementById('position-selector');
+//                                 if (selector) selector.value = dashboardState.filters.position;
+//                             }
+//                         }
+                        
+//                         updateSelectionDetails();
+//                         setTimeout(() => {
+//                             updateAllVisualizations();
+//                         }, 0);
+//                     } catch (error) {
+//                         console.error("Error in legend click event:", error);
+//                     }
+//                 });
+            
+//             // Compact selected indicator
+//             if (isSelected) {
+//                 item.append('rect')
+//                     .attr('width', itemWidth - 5)
+//                     .attr('height', 12)
+//                     .attr('x', -3)
+//                     .attr('y', -9)
+//                     .attr('fill', '#f0f0f0')
+//                     .attr('rx', 2)
+//                     .attr('ry', 2)
+//                     .attr('opacity', 0.6);
+//             }
+            
+//             // Small color square
+//             item.append('rect')
+//                 .attr('width', 8)
+//                 .attr('height', 8)
+//                 .attr('fill', pcp.colorScale(group))
+//                 .attr('stroke', isSelected ? '#000' : 'none')
+//                 .attr('stroke-width', isSelected ? 1 : 0);
+            
+//             // Smaller text
+//             item.append('text')
+//                 .attr('x', 12)
+//                 .attr('y', 7)
+//                 .style('font-size', '9px')
+//                 .style('font-weight', isSelected ? 'bold' : 'normal')
+//                 .text(group);
+//         });
+        
+//         // Set reduced legend height
+//         pcp.legendHeight = 22;
+//     } catch (error) {
+//         console.error("Error adding PCP legend:", error);
+//     }
+// }
 function addPCPLegend(groups) {
     try {
         if (pcp.sampleMode) {
-            // pcp.svg.append('text')
-            //     .attr('class', 'sample-indicator')
-            //     .attr('x', pcp.width / 2)
-            //     .attr('y', -5)
-            //     .attr('text-anchor', 'middle')
-            //     .attr('font-size', '12px')
-            //     .attr('fill', '#666')
-            //     .attr('font-style', 'italic')
-            //     .text(`Showing random sample of ${pcp.sampleSize} lines`);
+            pcp.svg.append('text')
+                .attr('class', 'sample-indicator')
+                .attr('x', pcp.width / 2)
+                .attr('y', -5)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '9px') // Smaller font
+                .attr('fill', '#666')
+                .attr('font-style', 'italic')
+                .text(`Showing sample of ${pcp.sampleSize} lines`);
         }
         
         const legendWidth = pcp.width;
         
+        // Move legend to bottom of chart and make it smaller
         const legend = pcp.svg.append('g')
             .attr('class', 'pcp-legend')
-            .attr('transform', `translate(0, ${pcp.height + 5})`);
+            .attr('transform', `translate(0, ${pcp.height + 2})`); // Reduced gap
         
+        // Make legend background smaller and more transparent
         legend.append('rect')
             .attr('width', legendWidth)
-            .attr('height', pcp.legendHeight - 10)
+            .attr('height', 20) // Reduced height
             .attr('fill', 'white')
-            .attr('opacity', 0.7)
-            .attr('rx', 5)
-            .attr('ry', 5);
+            .attr('opacity', 0.5) // More transparent
+            .attr('rx', 3)
+            .attr('ry', 3);
 
+        // Reduced title text and moved left
         legend.append('text')
-            .attr('x', 10)
-            .attr('y', 20)
-            .style('font-size', '12px')
+            .attr('x', 5)
+            .attr('y', 12)
+            .style('font-size', '9px')
             .style('font-weight', 'bold')
             .text(pcp.clubMode ? 'Leagues' : 'Position Groups');
         
-        legend.append('text')
-            .attr('x', legendWidth - 120)
-            .attr('y', 20)
-            .style('font-size', '10px')
-            .style('font-style', 'italic')
-            .text('Click to filter');
+        // Remove click instructions to save space
         
         // Validate groups
         if (!groups || !Array.isArray(groups) || groups.length === 0) {
@@ -1184,12 +1651,13 @@ function addPCPLegend(groups) {
         }
         
         // Ensure we have a safe number of groups for legend
-        const displayGroups = groups.slice(0, Math.min(groups.length, 10));
+        const displayGroups = groups.slice(0, Math.min(groups.length, 4));
         
-        const itemWidth = Math.min(130, legendWidth / Math.max(1, displayGroups.length));
+        const itemWidth = Math.min(80, legendWidth / Math.max(1, displayGroups.length));
         
+        // CHANGED: Increased distance between title and labels by moving items further right
         const itemsGroup = legend.append('g')
-            .attr('transform', 'translate(5, 25)');
+            .attr('transform', 'translate(95, 5)'); // Increased from 70 to 95
             
         displayGroups.forEach((group, i) => {
             // Skip empty groups
@@ -1208,7 +1676,7 @@ function addPCPLegend(groups) {
             }
             
             const item = itemsGroup.append('g')
-                .attr('transform', `translate(${i * itemWidth}, 0)`)
+                .attr('transform', `translate(${i * (itemWidth)}, 0)`)
                 .style('cursor', 'pointer')
                 .on('click', function() {
                     try {
@@ -1252,35 +1720,43 @@ function addPCPLegend(groups) {
                     }
                 });
             
+            // Compact selected indicator
             if (isSelected) {
                 item.append('rect')
-                    .attr('width', itemWidth - 10)
-                    .attr('height', 22)
-                    .attr('x', -5)
-                    .attr('y', -15)
+                    .attr('width', itemWidth - 5)
+                    .attr('height', 12)
+                    .attr('x', -3)
+                    .attr('y', -9)
                     .attr('fill', '#f0f0f0')
-                    .attr('rx', 4)
-                    .attr('ry', 4);
+                    .attr('rx', 2)
+                    .attr('ry', 2)
+                    .attr('opacity', 0.6);
             }
             
+            // Small color square
             item.append('rect')
-                .attr('width', 14)
-                .attr('height', 14)
+                .attr('width', 8)
+                .attr('height', 8)
                 .attr('fill', pcp.colorScale(group))
                 .attr('stroke', isSelected ? '#000' : 'none')
-                .attr('stroke-width', isSelected ? 1.5 : 0);
+                .attr('stroke-width', isSelected ? 1 : 0);
             
+            // Smaller text
             item.append('text')
-                .attr('x', 20)
-                .attr('y', 12)
-                .style('font-size', '12px')
+                .attr('x', 12)
+                .attr('y', 7)
+                .style('font-size', '9px')
                 .style('font-weight', isSelected ? 'bold' : 'normal')
                 .text(group);
         });
+        
+        // Set reduced legend height
+        pcp.legendHeight = 22;
     } catch (error) {
         console.error("Error adding PCP legend:", error);
     }
 }
+
 
 // Highlight a specific player in the PCP
 function highlightPlayerInPCP(playerId) {

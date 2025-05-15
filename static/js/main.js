@@ -56,7 +56,7 @@ pieChartAPI = PieChartFromJSON(globalData.countries, 'country', 'percentage_of_p
   pieSize: 350,    // Larger pie chart
   // You would need to add these custom options to the function:
   pieX: 250,       // Custom X position
-  pieY: 200   // Custom Y position
+  pieY: 250   // Custom Y position
 });
 		
 		

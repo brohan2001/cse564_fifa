@@ -3552,7 +3552,710 @@ function addAxisLabelsWithInterpretation() {
         .text(pc2Interpretation);
 }
 
-// Add legend for value categories
+// // Add legend for value categories
+// function addValueCategoryLegend() {
+//     // Use value categories
+//     const valueCategories = ["Bargain", "Fair Value", "Premium", "Unknown"];
+    
+//     // Calculate legend positioning
+//     const legendWidth = biplot.width;
+//     const itemsPerRow = 4; // Four categories fit nicely in one row
+//     const itemWidth = legendWidth / itemsPerRow;
+//     const itemHeight = 20;
+//     const legendHeight = itemHeight + 50; // Title + row + description
+    
+//     // Create legend container at the bottom
+//     const legend = biplot.svg.append('g')
+//         .attr('class', 'biplot-legend')
+//         .attr('transform', `translate(0, ${biplot.height + 60})`); // Position below x-axis label
+    
+//     // Add background
+//     legend.append('rect')
+//         .attr('width', legendWidth)
+//         .attr('height', legendHeight)
+//         .attr('fill', 'white')
+//         .attr('opacity', 0.7)
+//         .attr('rx', 5)
+//         .attr('ry', 5);
+    
+//     // Add title and subtitle
+//     legend.append('text')
+//         .attr('x', 10)
+//         .attr('y', 15)
+//         .style('font-size', '12px')
+//         .style('font-weight', 'bold')
+//         .text('Market Value Assessment');
+        
+//     legend.append('text')
+//         .attr('x', 10)
+//         .attr('y', legendHeight - 10)
+//         .style('font-size', '9px')
+//         .style('font-style', 'italic')
+//         .style('fill', '#666')
+//         .text('Based on player overall rating, potential, age, and market value');
+    
+//     // Add legend items for each value category
+//     valueCategories.forEach((category, i) => {
+//         // Create group for legend item
+//         const item = legend.append('g')
+//             .attr('transform', `translate(${i * itemWidth + 10}, ${30})`);
+        
+//         // Add color swatch
+//         item.append('rect')
+//             .attr('width', 10)
+//             .attr('height', 10)
+//             .attr('fill', biplot.valueColorScale(category));
+        
+//         // Add label
+//         item.append('text')
+//             .attr('x', 15)
+//             .attr('y', 9)
+//             .style('font-size', '10px')
+//             .text(category);
+        
+//         // Add short description below
+//         let description = '';
+//         switch(category) {
+//             case 'Bargain':
+//                 description = 'Undervalued players';
+//                 break;
+//             case 'Fair Value':
+//                 description = 'Appropriate pricing';
+//                 break;
+//             case 'Premium':
+//                 description = 'High cost relative to ability';
+//                 break;
+//             case 'Unknown':
+//                 description = 'Insufficient data';
+//                 break;
+//         }
+        
+//         item.append('text')
+//             .attr('x', 15)
+//             .attr('y', 22)
+//             .style('font-size', '8px')
+//             .style('fill', '#666')
+//             .text(description);
+//     });
+    
+//     // Update SVG height to accommodate legend
+//     d3.select('#biplot svg')
+//         .attr('height', biplot.height + biplot.margin.top + biplot.margin.bottom + legendHeight + 20);
+// }
+// Add legend for value categories - complete function with changes
+// Updated function for value category legend with subtexts removed
+// function addValueCategoryLegend() {
+//     // Use value categories
+//     const valueCategories = ["Bargain", "Fair Value", "Premium", "Unknown"];
+    
+//     // Calculate legend positioning - moved up to be closer to the plot
+//     const legendWidth = biplot.width;
+//     const itemsPerRow = 4; // Four categories fit nicely in one row
+//     const itemWidth = legendWidth / itemsPerRow;
+//     const itemHeight = 15; // Reduced further
+//     const legendHeight = itemHeight + 5; // Minimal height
+    
+//     // Create legend container positioned much closer to the plot
+//     const legend = biplot.svg.append('g')
+//         .attr('class', 'biplot-legend')
+//         .attr('transform', `translate(0, ${biplot.height + 15})`); // Close to the plot
+    
+//     // Add background
+//     legend.append('rect')
+//         .attr('width', legendWidth)
+//         .attr('height', legendHeight)
+//         .attr('fill', 'white')
+//         .attr('opacity', 0.7)
+//         .attr('rx', 3)
+//         .attr('ry', 3);
+    
+//     // Add title only, remove subtitle
+//     legend.append('text')
+//         .attr('x', 10)
+//         .attr('y', 12)
+//         .style('font-size', '10px')
+//         .style('font-weight', 'bold')
+//         .text('Market Value Assessment');
+    
+//     // Add legend items for each value category - more compact
+//     valueCategories.forEach((category, i) => {
+//         // Create group for legend item
+//         const item = legend.append('g')
+//             .attr('transform', `translate(${i * itemWidth + legendWidth/2 - (itemWidth * valueCategories.length)/2 + 10}, ${8})`);
+        
+//         // Add color swatch
+//         item.append('rect')
+//             .attr('width', 8)
+//             .attr('height', 8)
+//             .attr('fill', biplot.valueColorScale(category));
+        
+//         // Add label - no description
+//         item.append('text')
+//             .attr('x', 12)
+//             .attr('y', 7)
+//             .style('font-size', '9px')
+//             .text(category);
+        
+//         // Descriptions removed
+//     });
+    
+//     // Update SVG height to accommodate legend - less extra space
+//     d3.select('#biplot svg')
+//         .attr('height', biplot.height + biplot.margin.top + biplot.margin.bottom + legendHeight + 5);
+// }
+
+
+// // Updated function for position legend to match the compact style
+// function addPositionLegend() {
+//     // Use position groups
+//     const positionGroups = ["Goalkeeper", "Defender", "Midfielder", "Attacker"];
+    
+//     // Calculate legend positioning - same compact format as value legend
+//     const legendWidth = biplot.width;
+//     const itemsPerRow = 4;
+//     const itemWidth = legendWidth / itemsPerRow;
+//     const itemHeight = 15; // Reduced height
+//     const legendHeight = itemHeight + 5; // Minimal height
+    
+//     // Create legend container at the bottom - same distance as value legend
+//     const legend = biplot.svg.append('g')
+//         .attr('class', 'biplot-legend')
+//         .attr('transform', `translate(0, ${biplot.height + 15})`);
+    
+//     // Add background
+//     legend.append('rect')
+//         .attr('width', legendWidth)
+//         .attr('height', legendHeight)
+//         .attr('fill', 'white')
+//         .attr('opacity', 0.7)
+//         .attr('rx', 3)
+//         .attr('ry', 3);
+    
+//     // Add title only - no subtitle or instructions
+//     legend.append('text')
+//         .attr('x', 10)
+//         .attr('y', 12)
+//         .style('font-size', '10px')
+//         .style('font-weight', 'bold')
+//         .text('Position Groups');
+
+//     // Add legend items - centered
+//     positionGroups.forEach((group, i) => {
+//         const isSelected = biplot.selectedPositionGroups.has(group);
+        
+//         // Create group for legend item - centered in available space
+//         const item = legend.append('g')
+//             .attr('transform', `translate(${i * itemWidth + legendWidth/2 - (itemWidth * positionGroups.length)/2 + 10}, ${8})`)
+//             .style('cursor', 'pointer')
+//             .on('click', function() {
+//                 // Toggle selection for this position group
+//                 if (biplot.selectedPositionGroups.has(group)) {
+//                     biplot.selectedPositionGroups.delete(group);
+                    
+//                     // If no position groups selected now, reset to all
+//                     if (biplot.selectedPositionGroups.size === 0) {
+//                         dashboardState.filters.position = 'all';
+//                     }
+//                 } else {
+//                     // Clear other selections if this is first selection
+//                     if (biplot.selectedPositionGroups.size === 0) {
+//                         biplot.selectedPositionGroups.clear();
+//                     }
+                    
+//                     biplot.selectedPositionGroups.add(group);
+                    
+//                     // Update dashboard state with a representative position from this group
+//                     const representativePosition = biplot.positionGroupToPositions[group][0];
+//                     dashboardState.filters.position = representativePosition;
+//                 }
+                
+//                 // Update dashboard UI
+//                 const positionSelector = document.getElementById('position-selector');
+//                 if (positionSelector) {
+//                     positionSelector.value = dashboardState.filters.position;
+//                 }
+                
+//                 // Update the rest of the dashboard
+//                 updateSelectionDetails();
+                
+//                 // Update all visualizations
+//                 updateAllVisualizations();
+//             });
+        
+//         // Add selection background for better visibility
+//         if (isSelected) {
+//             item.append('rect')
+//                 .attr('width', itemWidth - 15)
+//                 .attr('height', 14)
+//                 .attr('x', -5)
+//                 .attr('y', -8)
+//                 .attr('fill', '#f0f0f0')
+//                 .attr('rx', 3)
+//                 .attr('ry', 3);
+//         }
+        
+//         // Add color swatch
+//         item.append('rect')
+//             .attr('width', 8)
+//             .attr('height', 8)
+//             .attr('fill', biplot.positionColorScale(group))
+//             .attr('stroke', isSelected ? '#000' : 'none')
+//             .attr('stroke-width', isSelected ? 1 : 0);
+        
+//         // Add label only - no descriptions
+//         item.append('text')
+//             .attr('x', 12)
+//             .attr('y', 7)
+//             .style('font-size', '9px')
+//             .style('font-weight', isSelected ? 'bold' : 'normal')
+//             .text(group);
+        
+//         // Count badge for selected items - smaller and more subtle
+//         if (isSelected) {
+//             // Count players in this group
+//             let count = 0;
+//             biplot.pcaData.forEach(d => {
+//                 const position = d.player_positions || 'Unknown';
+//                 const positionGroup = mapPositionToGroup(position);
+//                 if (positionGroup === group) {
+//                     count++;
+//                 }
+//             });
+            
+//             // Add small badge with count - more compact
+//             const badge = item.append('g')
+//                 .attr('transform', `translate(${itemWidth - 30}, 0)`);
+            
+//             badge.append('rect')
+//                 .attr('width', 16)
+//                 .attr('height', 12)
+//                 .attr('rx', 6)
+//                 .attr('ry', 6)
+//                 .attr('fill', '#555')
+//                 .attr('y', -6)
+//                 .attr('opacity', 0.7);
+                
+//             badge.append('text')
+//                 .attr('x', 8)
+//                 .attr('y', 3)
+//                 .attr('text-anchor', 'middle')
+//                 .attr('fill', 'white')
+//                 .attr('font-size', '8px')
+//                 .text(count);
+//         }
+//     });
+    
+//     // Update SVG height to accommodate legend - match value legend
+//     d3.select('#biplot svg')
+//         .attr('height', biplot.height + biplot.margin.top + biplot.margin.bottom + legendHeight + 5);
+// }
+
+// Updated function for value category legend with spacing between title and items
+// function addValueCategoryLegend() {
+//     // Use value categories
+//     const valueCategories = ["Bargain", "Fair Value", "Premium", "Unknown"];
+    
+//     // Calculate legend positioning
+//     const legendWidth = biplot.width;
+//     const itemsPerRow = 4; // Four categories fit nicely in one row
+//     const itemHeight = 15; 
+//     const legendHeight = itemHeight + 15; // Increased for more space
+    
+//     // Create legend container positioned close to the plot
+//     const legend = biplot.svg.append('g')
+//         .attr('class', 'biplot-legend')
+//         .attr('transform', `translate(0, ${biplot.height + 15})`);
+    
+//     // Add background
+//     legend.append('rect')
+//         .attr('width', legendWidth)
+//         .attr('height', legendHeight)
+//         .attr('fill', 'white')
+//         .attr('opacity', 0.7)
+//         .attr('rx', 3)
+//         .attr('ry', 3);
+    
+//     // Move title to left corner
+//     legend.append('text')
+//         .attr('x', 10)
+//         .attr('y', 11)
+//         .style('font-size', '10px')
+//         .style('font-weight', 'bold')
+//         .text('Market Value Assessment');
+    
+//     // Add legend items for each value category - moved to the right side 
+//     // and added spacing from the title
+//     valueCategories.forEach((category, i) => {
+//         // Create group for legend item - moved right and down for spacing
+//         const item = legend.append('g')
+//             .attr('transform', `translate(${i * (legendWidth/4 - 10) + legendWidth/2 - 180}, ${12})`);
+        
+//         // Add color swatch
+//         item.append('rect')
+//             .attr('width', 8)
+//             .attr('height', 8)
+//             .attr('fill', biplot.valueColorScale(category));
+        
+//         // Add label
+//         item.append('text')
+//             .attr('x', 12)
+//             .attr('y', 7)
+//             .style('font-size', '9px')
+//             .text(category);
+//     });
+    
+//     // Update SVG height to accommodate legend
+//     d3.select('#biplot svg')
+//         .attr('height', biplot.height + biplot.margin.top + biplot.margin.bottom + legendHeight + 5);
+// }
+
+// // Updated function for position legend with spacing between title and items
+// function addPositionLegend() {
+//     // Use position groups
+//     const positionGroups = ["Goalkeeper", "Defender", "Midfielder", "Attacker"];
+    
+//     // Calculate legend positioning
+//     const legendWidth = biplot.width;
+//     const itemsPerRow = 4;
+//     const itemHeight = 15;
+//     const legendHeight = itemHeight + 15; // Increased for more space
+    
+//     // Create legend container at the bottom
+//     const legend = biplot.svg.append('g')
+//         .attr('class', 'biplot-legend')
+//         .attr('transform', `translate(0, ${biplot.height + 15})`);
+    
+//     // Add background
+//     legend.append('rect')
+//         .attr('width', legendWidth)
+//         .attr('height', legendHeight)
+//         .attr('fill', 'white')
+//         .attr('opacity', 0.7)
+//         .attr('rx', 3)
+//         .attr('ry', 3);
+    
+//     // Move title to left corner
+//     legend.append('text')
+//         .attr('x', 10)
+//         .attr('y', 11)
+//         .style('font-size', '10px')
+//         .style('font-weight', 'bold')
+//         .text('Position Groups');
+
+//     // Add legend items - moved right and down for spacing from title
+//     positionGroups.forEach((group, i) => {
+//         const isSelected = biplot.selectedPositionGroups.has(group);
+        
+//         // Create group for legend item - moved right and down for spacing
+//         const item = legend.append('g')
+//             .attr('transform', `translate(${i * (legendWidth/4 - 10) + legendWidth/2 - 180}, ${12})`)
+//             .style('cursor', 'pointer')
+//             .on('click', function() {
+//                 // Toggle selection for this position group
+//                 if (biplot.selectedPositionGroups.has(group)) {
+//                     biplot.selectedPositionGroups.delete(group);
+                    
+//                     // If no position groups selected now, reset to all
+//                     if (biplot.selectedPositionGroups.size === 0) {
+//                         dashboardState.filters.position = 'all';
+//                     }
+//                 } else {
+//                     // Clear other selections if this is first selection
+//                     if (biplot.selectedPositionGroups.size === 0) {
+//                         biplot.selectedPositionGroups.clear();
+//                     }
+                    
+//                     biplot.selectedPositionGroups.add(group);
+                    
+//                     // Update dashboard state with a representative position from this group
+//                     const representativePosition = biplot.positionGroupToPositions[group][0];
+//                     dashboardState.filters.position = representativePosition;
+//                 }
+                
+//                 // Update dashboard UI
+//                 const positionSelector = document.getElementById('position-selector');
+//                 if (positionSelector) {
+//                     positionSelector.value = dashboardState.filters.position;
+//                 }
+                
+//                 // Update the rest of the dashboard
+//                 updateSelectionDetails();
+                
+//                 // Update all visualizations
+//                 updateAllVisualizations();
+//             });
+        
+//         // Add selection background for better visibility
+//         if (isSelected) {
+//             item.append('rect')
+//                 .attr('width', itemWidth - 15)
+//                 .attr('height', 14)
+//                 .attr('x', -5)
+//                 .attr('y', -8)
+//                 .attr('fill', '#f0f0f0')
+//                 .attr('rx', 3)
+//                 .attr('ry', 3);
+//         }
+        
+//         // Add color swatch
+//         item.append('rect')
+//             .attr('width', 8)
+//             .attr('height', 8)
+//             .attr('fill', biplot.positionColorScale(group))
+//             .attr('stroke', isSelected ? '#000' : 'none')
+//             .attr('stroke-width', isSelected ? 1 : 0);
+        
+//         // Add label
+//         item.append('text')
+//             .attr('x', 12)
+//             .attr('y', 7)
+//             .style('font-size', '9px')
+//             .style('font-weight', isSelected ? 'bold' : 'normal')
+//             .text(group);
+        
+//         // Count badge for selected items
+//         if (isSelected) {
+//             // Count players in this group
+//             let count = 0;
+//             biplot.pcaData.forEach(d => {
+//                 const position = d.player_positions || 'Unknown';
+//                 const positionGroup = mapPositionToGroup(position);
+//                 if (positionGroup === group) {
+//                     count++;
+//                 }
+//             });
+            
+//             // Add small badge with count
+//             const badge = item.append('g')
+//                 .attr('transform', `translate(${legendWidth/4 - 40}, 0)`);
+            
+//             badge.append('rect')
+//                 .attr('width', 16)
+//                 .attr('height', 12)
+//                 .attr('rx', 6)
+//                 .attr('ry', 6)
+//                 .attr('fill', '#555')
+//                 .attr('y', -6)
+//                 .attr('opacity', 0.7);
+                
+//             badge.append('text')
+//                 .attr('x', 8)
+//                 .attr('y', 3)
+//                 .attr('text-anchor', 'middle')
+//                 .attr('fill', 'white')
+//                 .attr('font-size', '8px')
+//                 .text(count);
+//         }
+//     });
+    
+//     // Update SVG height to accommodate legend
+//     d3.select('#biplot svg')
+//         .attr('height', biplot.height + biplot.margin.top + biplot.margin.bottom + legendHeight + 5);
+// }
+// Updated function for value category legend with increased distance from the plot
+// function addValueCategoryLegend() {
+//     // Use value categories
+//     const valueCategories = ["Bargain", "Fair Value", "Premium", "Unknown"];
+    
+//     // Calculate legend positioning
+//     const legendWidth = biplot.width;
+//     const itemsPerRow = 4; // Four categories fit nicely in one row
+//     const itemHeight = 15; 
+//     const legendHeight = itemHeight + 15; // Increased for more space
+    
+//     // CHANGED: Create legend container positioned further from the plot
+//     const legend = biplot.svg.append('g')
+//         .attr('class', 'biplot-legend')
+//         .attr('transform', `translate(0, ${biplot.height + 35})`); // Increased from 15 to 35
+    
+//     // Add background
+//     legend.append('rect')
+//         .attr('width', legendWidth)
+//         .attr('height', legendHeight)
+//         .attr('fill', 'white')
+//         .attr('opacity', 0.7)
+//         .attr('rx', 3)
+//         .attr('ry', 3);
+    
+//     // Move title to left corner
+//     legend.append('text')
+//         .attr('x', 10)
+//         .attr('y', 11)
+//         .style('font-size', '10px')
+//         .style('font-weight', 'bold')
+//         .text('Market Value Assessment');
+    
+//     // Add legend items for each value category - moved to the right side 
+//     // and added spacing from the title
+//     valueCategories.forEach((category, i) => {
+//         // Create group for legend item - moved right and down for spacing
+//         const item = legend.append('g')
+//             .attr('transform', `translate(${i * (legendWidth/4 - 10) + legendWidth/2 - 180}, ${12})`);
+        
+//         // Add color swatch
+//         item.append('rect')
+//             .attr('width', 8)
+//             .attr('height', 8)
+//             .attr('fill', biplot.valueColorScale(category));
+        
+//         // Add label
+//         item.append('text')
+//             .attr('x', 12)
+//             .attr('y', 7)
+//             .style('font-size', '9px')
+//             .text(category);
+//     });
+    
+//     // Update SVG height to accommodate legend with increased distance
+//     d3.select('#biplot svg')
+//         .attr('height', biplot.height + biplot.margin.top + biplot.margin.bottom + legendHeight + 30); // Increased padding
+// }
+
+// // Updated function for position legend with increased distance from the plot
+// function addPositionLegend() {
+//     // Use position groups
+//     const positionGroups = ["Goalkeeper", "Defender", "Midfielder", "Attacker"];
+    
+//     // Calculate legend positioning
+//     const legendWidth = biplot.width;
+//     const itemsPerRow = 4;
+//     const itemHeight = 15;
+//     const legendHeight = itemHeight + 15; // Increased for more space
+    
+//     // CHANGED: Create legend container positioned further from the plot
+//     const legend = biplot.svg.append('g')
+//         .attr('class', 'biplot-legend')
+//         .attr('transform', `translate(0, ${biplot.height + 35})`); // Increased from 15 to 35
+    
+//     // Add background
+//     legend.append('rect')
+//         .attr('width', legendWidth)
+//         .attr('height', legendHeight)
+//         .attr('fill', 'white')
+//         .attr('opacity', 0.7)
+//         .attr('rx', 3)
+//         .attr('ry', 3);
+    
+//     // Move title to left corner
+//     legend.append('text')
+//         .attr('x', 10)
+//         .attr('y', 11)
+//         .style('font-size', '10px')
+//         .style('font-weight', 'bold')
+//         .text('Position Groups');
+
+//     // Add legend items - moved right and down for spacing from title
+//     positionGroups.forEach((group, i) => {
+//         const isSelected = biplot.selectedPositionGroups.has(group);
+        
+//         // Create group for legend item - moved right and down for spacing
+//         const item = legend.append('g')
+//             .attr('transform', `translate(${i * (legendWidth/4 - 10) + legendWidth/2 - 180}, ${12})`)
+//             .style('cursor', 'pointer')
+//             .on('click', function() {
+//                 // Toggle selection for this position group
+//                 if (biplot.selectedPositionGroups.has(group)) {
+//                     biplot.selectedPositionGroups.delete(group);
+                    
+//                     // If no position groups selected now, reset to all
+//                     if (biplot.selectedPositionGroups.size === 0) {
+//                         dashboardState.filters.position = 'all';
+//                     }
+//                 } else {
+//                     // Clear other selections if this is first selection
+//                     if (biplot.selectedPositionGroups.size === 0) {
+//                         biplot.selectedPositionGroups.clear();
+//                     }
+                    
+//                     biplot.selectedPositionGroups.add(group);
+                    
+//                     // Update dashboard state with a representative position from this group
+//                     const representativePosition = biplot.positionGroupToPositions[group][0];
+//                     dashboardState.filters.position = representativePosition;
+//                 }
+                
+//                 // Update dashboard UI
+//                 const positionSelector = document.getElementById('position-selector');
+//                 if (positionSelector) {
+//                     positionSelector.value = dashboardState.filters.position;
+//                 }
+                
+//                 // Update the rest of the dashboard
+//                 updateSelectionDetails();
+                
+//                 // Update all visualizations
+//                 updateAllVisualizations();
+//             });
+        
+//         // Add selection background for better visibility
+//         if (isSelected) {
+//             item.append('rect')
+//                 .attr('width', itemWidth - 15)
+//                 .attr('height', 14)
+//                 .attr('x', -5)
+//                 .attr('y', -8)
+//                 .attr('fill', '#f0f0f0')
+//                 .attr('rx', 3)
+//                 .attr('ry', 3);
+//         }
+        
+//         // Add color swatch
+//         item.append('rect')
+//             .attr('width', 8)
+//             .attr('height', 8)
+//             .attr('fill', biplot.positionColorScale(group))
+//             .attr('stroke', isSelected ? '#000' : 'none')
+//             .attr('stroke-width', isSelected ? 1 : 0);
+        
+//         // Add label
+//         item.append('text')
+//             .attr('x', 12)
+//             .attr('y', 7)
+//             .style('font-size', '9px')
+//             .style('font-weight', isSelected ? 'bold' : 'normal')
+//             .text(group);
+        
+//         // Count badge for selected items
+//         if (isSelected) {
+//             // Count players in this group
+//             let count = 0;
+//             biplot.pcaData.forEach(d => {
+//                 const position = d.player_positions || 'Unknown';
+//                 const positionGroup = mapPositionToGroup(position);
+//                 if (positionGroup === group) {
+//                     count++;
+//                 }
+//             });
+            
+//             // Add small badge with count
+//             const badge = item.append('g')
+//                 .attr('transform', `translate(${legendWidth/4 - 40}, 0)`);
+            
+//             badge.append('rect')
+//                 .attr('width', 16)
+//                 .attr('height', 12)
+//                 .attr('rx', 6)
+//                 .attr('ry', 6)
+//                 .attr('fill', '#555')
+//                 .attr('y', -6)
+//                 .attr('opacity', 0.7);
+                
+//             badge.append('text')
+//                 .attr('x', 8)
+//                 .attr('y', 3)
+//                 .attr('text-anchor', 'middle')
+//                 .attr('fill', 'white')
+//                 .attr('font-size', '8px')
+//                 .text(count);
+//         }
+//     });
+    
+//     // Update SVG height to accommodate legend with increased distance
+//     d3.select('#biplot svg')
+//         .attr('height', biplot.height + biplot.margin.top + biplot.margin.bottom + legendHeight + 30); // Increased padding
+// }
+
+// Updated function for value category legend with more horizontal space
 function addValueCategoryLegend() {
     // Use value categories
     const valueCategories = ["Bargain", "Fair Value", "Premium", "Unknown"];
@@ -3560,14 +4263,13 @@ function addValueCategoryLegend() {
     // Calculate legend positioning
     const legendWidth = biplot.width;
     const itemsPerRow = 4; // Four categories fit nicely in one row
-    const itemWidth = legendWidth / itemsPerRow;
-    const itemHeight = 20;
-    const legendHeight = itemHeight + 50; // Title + row + description
+    const itemHeight = 15; 
+    const legendHeight = itemHeight + 15;
     
-    // Create legend container at the bottom
+    // Create legend container positioned further from the plot
     const legend = biplot.svg.append('g')
         .attr('class', 'biplot-legend')
-        .attr('transform', `translate(0, ${biplot.height + 60})`); // Position below x-axis label
+        .attr('transform', `translate(0, ${biplot.height + 35})`);
     
     // Add background
     legend.append('rect')
@@ -3575,90 +4277,57 @@ function addValueCategoryLegend() {
         .attr('height', legendHeight)
         .attr('fill', 'white')
         .attr('opacity', 0.7)
-        .attr('rx', 5)
-        .attr('ry', 5);
+        .attr('rx', 3)
+        .attr('ry', 3);
     
-    // Add title and subtitle
+    // Move title to left corner
     legend.append('text')
         .attr('x', 10)
-        .attr('y', 15)
-        .style('font-size', '12px')
+        .attr('y', 11)
+        .style('font-size', '10px')
         .style('font-weight', 'bold')
         .text('Market Value Assessment');
-        
-    legend.append('text')
-        .attr('x', 10)
-        .attr('y', legendHeight - 10)
-        .style('font-size', '9px')
-        .style('font-style', 'italic')
-        .style('fill', '#666')
-        .text('Based on player overall rating, potential, age, and market value');
     
-    // Add legend items for each value category
+    // CHANGED: Increased horizontal spacing between title and legend items
     valueCategories.forEach((category, i) => {
-        // Create group for legend item
+        // Create group for legend item - moved further right for more spacing from title
         const item = legend.append('g')
-            .attr('transform', `translate(${i * itemWidth + 10}, ${30})`);
+            .attr('transform', `translate(${i * (legendWidth/4 - 15) + legendWidth/2 - 120}, ${12})`);
         
         // Add color swatch
         item.append('rect')
-            .attr('width', 10)
-            .attr('height', 10)
+            .attr('width', 8)
+            .attr('height', 8)
             .attr('fill', biplot.valueColorScale(category));
         
         // Add label
         item.append('text')
-            .attr('x', 15)
-            .attr('y', 9)
-            .style('font-size', '10px')
+            .attr('x', 12)
+            .attr('y', 7)
+            .style('font-size', '9px')
             .text(category);
-        
-        // Add short description below
-        let description = '';
-        switch(category) {
-            case 'Bargain':
-                description = 'Undervalued players';
-                break;
-            case 'Fair Value':
-                description = 'Appropriate pricing';
-                break;
-            case 'Premium':
-                description = 'High cost relative to ability';
-                break;
-            case 'Unknown':
-                description = 'Insufficient data';
-                break;
-        }
-        
-        item.append('text')
-            .attr('x', 15)
-            .attr('y', 22)
-            .style('font-size', '8px')
-            .style('fill', '#666')
-            .text(description);
     });
     
-    // Update SVG height to accommodate legend
+    // Update SVG height to accommodate legend with increased distance
     d3.select('#biplot svg')
-        .attr('height', biplot.height + biplot.margin.top + biplot.margin.bottom + legendHeight + 20);
+        .attr('height', biplot.height + biplot.margin.top + biplot.margin.bottom + legendHeight + 30);
 }
 
-// Add legend for position groups
+// Updated function for position legend with more horizontal space
 function addPositionLegend() {
     // Use position groups
     const positionGroups = ["Goalkeeper", "Defender", "Midfielder", "Attacker"];
     
     // Calculate legend positioning
     const legendWidth = biplot.width;
-    const itemsPerRow = 4; // Four position groups fit nicely in one row
-    const itemWidth = legendWidth / itemsPerRow;
-    const itemHeight = 20;
-    const legendHeight = itemHeight + 30; // Just one row + title
+    const itemsPerRow = 4;
+    const itemHeight = 15;
+    const legendHeight = itemHeight + 15;
     
-    // Create legend container at the bottom
+    // Create legend container positioned further from the plot
     const legend = biplot.svg.append('g')
         .attr('class', 'biplot-legend')
-        .attr('transform', `translate(0, ${biplot.height + 50})`); // Position below x-axis label
+        .attr('transform', `translate(0, ${biplot.height + 35})`);
     
     // Add background
     legend.append('rect')
@@ -3666,32 +4335,24 @@ function addPositionLegend() {
         .attr('height', legendHeight)
         .attr('fill', 'white')
         .attr('opacity', 0.7)
-        .attr('rx', 5)
-        .attr('ry', 5);
+        .attr('rx', 3)
+        .attr('ry', 3);
     
-    // Add title
+    // Move title to left corner
     legend.append('text')
         .attr('x', 10)
-        .attr('y', 15)
-        .style('font-size', '12px')
+        .attr('y', 11)
+        .style('font-size', '10px')
         .style('font-weight', 'bold')
         .text('Position Groups');
 
-// Add toggle instructions
-    legend.append('text')
-        .attr('x', legendWidth - 170)
-        .attr('y', 15)
-        .style('font-size', '8px')
-        .style('font-style', 'italic')
-        .text('Click on position group to filter');
-    
-    // Add legend items for each position group
+    // CHANGED: Increased horizontal spacing between title and legend items
     positionGroups.forEach((group, i) => {
         const isSelected = biplot.selectedPositionGroups.has(group);
         
-        // Create group for legend item
+        // Create group for legend item - moved further right for more spacing from title
         const item = legend.append('g')
-            .attr('transform', `translate(${i * itemWidth + 10}, ${30})`)
+            .attr('transform', `translate(${i * (legendWidth/4 - 15) + legendWidth/2 - 120}, ${12})`)
             .style('cursor', 'pointer')
             .on('click', function() {
                 // Toggle selection for this position group
@@ -3732,9 +4393,9 @@ function addPositionLegend() {
         if (isSelected) {
             item.append('rect')
                 .attr('width', itemWidth - 15)
-                .attr('height', 16)
+                .attr('height', 14)
                 .attr('x', -5)
-                .attr('y', -10)
+                .attr('y', -8)
                 .attr('fill', '#f0f0f0')
                 .attr('rx', 3)
                 .attr('ry', 3);
@@ -3742,21 +4403,21 @@ function addPositionLegend() {
         
         // Add color swatch
         item.append('rect')
-            .attr('width', 10)
-            .attr('height', 10)
+            .attr('width', 8)
+            .attr('height', 8)
             .attr('fill', biplot.positionColorScale(group))
             .attr('stroke', isSelected ? '#000' : 'none')
             .attr('stroke-width', isSelected ? 1 : 0);
         
         // Add label
         item.append('text')
-            .attr('x', 15)
-            .attr('y', 9)
-            .style('font-size', '10px')
+            .attr('x', 12)
+            .attr('y', 7)
+            .style('font-size', '9px')
             .style('font-weight', isSelected ? 'bold' : 'normal')
             .text(group);
         
-        // Add count badge if selected
+        // Count badge for selected items
         if (isSelected) {
             // Count players in this group
             let count = 0;
@@ -3770,31 +4431,182 @@ function addPositionLegend() {
             
             // Add small badge with count
             const badge = item.append('g')
-                .attr('transform', `translate(${itemWidth - 35}, 0)`);
+                .attr('transform', `translate(${legendWidth/4 - 40}, 0)`);
             
             badge.append('rect')
-                .attr('width', 20)
-                .attr('height', 14)
-                .attr('rx', 7)
-                .attr('ry', 7)
+                .attr('width', 16)
+                .attr('height', 12)
+                .attr('rx', 6)
+                .attr('ry', 6)
                 .attr('fill', '#555')
-                .attr('y', -7);
+                .attr('y', -6)
+                .attr('opacity', 0.7);
                 
             badge.append('text')
-                .attr('x', 10)
-                .attr('y', 4)
+                .attr('x', 8)
+                .attr('y', 3)
                 .attr('text-anchor', 'middle')
                 .attr('fill', 'white')
-                .attr('font-size', '9px')
+                .attr('font-size', '8px')
                 .text(count);
         }
     });
     
-    // Update SVG height to accommodate legend
+    // Update SVG height to accommodate legend with increased distance
     d3.select('#biplot svg')
-        .attr('height', biplot.height + biplot.margin.top + biplot.margin.bottom + legendHeight + 10);
+        .attr('height', biplot.height + biplot.margin.top + biplot.margin.bottom + legendHeight + 30);
 }
 
+// Also update the PCP legend for consistency:
+function addPCPLegend(groups) {
+    try {
+        if (pcp.sampleMode) {
+            pcp.svg.append('text')
+                .attr('class', 'sample-indicator')
+                .attr('x', pcp.width / 2)
+                .attr('y', -5)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '9px')
+                .attr('fill', '#666')
+                .attr('font-style', 'italic')
+                .text(`Showing sample of ${pcp.sampleSize} lines`);
+        }
+        
+        const legendWidth = pcp.width;
+        
+        // Move legend to bottom of chart and make it smaller
+        const legend = pcp.svg.append('g')
+            .attr('class', 'pcp-legend')
+            .attr('transform', `translate(0, ${pcp.height + 2})`);
+        
+        // Make legend background smaller and more transparent
+        legend.append('rect')
+            .attr('width', legendWidth)
+            .attr('height', 20)
+            .attr('fill', 'white')
+            .attr('opacity', 0.5)
+            .attr('rx', 3)
+            .attr('ry', 3);
+
+        // Reduced title text and moved left
+        legend.append('text')
+            .attr('x', 5)
+            .attr('y', 12)
+            .style('font-size', '9px')
+            .style('font-weight', 'bold')
+            .text(pcp.clubMode ? 'Leagues' : 'Position Groups');
+        
+        // Validate groups
+        if (!groups || !Array.isArray(groups) || groups.length === 0) {
+            groups = pcp.clubMode ? ["Unknown League"] : ["Goalkeeper", "Defender", "Midfielder", "Attacker"];
+        }
+        
+        // Ensure we have a safe number of groups for legend
+        const displayGroups = groups.slice(0, Math.min(groups.length, 4));
+        
+        const itemWidth = Math.min(80, legendWidth / Math.max(1, displayGroups.length));
+        
+        // CHANGED: Increased distance between title and labels even more
+        const itemsGroup = legend.append('g')
+            .attr('transform', 'translate(120, 5)'); // Increased from 95 to 120
+            
+        displayGroups.forEach((group, i) => {
+            // Skip empty groups
+            if (!group) return;
+            
+            let isSelected = false;
+            
+            if (pcp.clubMode) {
+                isSelected = (dashboardState.filters.league === group);
+            } else {
+                const selectedPosition = dashboardState.filters.position;
+                if (selectedPosition !== 'all') {
+                    const selectedGroup = mapPositionToGroup(selectedPosition);
+                    isSelected = (selectedGroup === group);
+                }
+            }
+            
+            const item = itemsGroup.append('g')
+                .attr('transform', `translate(${i * (itemWidth)}, 0)`)
+                .style('cursor', 'pointer')
+                .on('click', function() {
+                    try {
+                        if (!pcp.isBrushing) {
+                            pcp.highlightedPlayerId = null;
+                        }
+                        
+                        if (pcp.clubMode) {
+                            if (dashboardState.filters.league === group) {
+                                dashboardState.filters.league = 'all';
+                            } else {
+                                dashboardState.filters.league = group;
+                            }
+                            const selector = document.getElementById('league-selector');
+                            if (selector) selector.value = dashboardState.filters.league;
+                        } else {
+                            const positions = Object.entries(pcp.positionGroups)
+                                .filter(([pos, posGroup]) => posGroup === group)
+                                .map(([pos]) => pos);
+                            
+                            if (positions.length > 0) {
+                                const firstPosition = positions[0];
+                                
+                                if (dashboardState.filters.position === firstPosition) {
+                                    dashboardState.filters.position = 'all';
+                                } else {
+                                    dashboardState.filters.position = firstPosition;
+                                }
+                                
+                                const selector = document.getElementById('position-selector');
+                                if (selector) selector.value = dashboardState.filters.position;
+                            }
+                        }
+                        
+                        updateSelectionDetails();
+                        setTimeout(() => {
+                            updateAllVisualizations();
+                        }, 0);
+                    } catch (error) {
+                        console.error("Error in legend click event:", error);
+                    }
+                });
+            
+            // Compact selected indicator
+            if (isSelected) {
+                item.append('rect')
+                    .attr('width', itemWidth - 5)
+                    .attr('height', 12)
+                    .attr('x', -3)
+                    .attr('y', -9)
+                    .attr('fill', '#f0f0f0')
+                    .attr('rx', 2)
+                    .attr('ry', 2)
+                    .attr('opacity', 0.6);
+            }
+            
+            // Small color square
+            item.append('rect')
+                .attr('width', 8)
+                .attr('height', 8)
+                .attr('fill', pcp.colorScale(group))
+                .attr('stroke', isSelected ? '#000' : 'none')
+                .attr('stroke-width', isSelected ? 1 : 0);
+            
+            // Smaller text
+            item.append('text')
+                .attr('x', 12)
+                .attr('y', 7)q
+                .style('font-size', '9px')
+                .style('font-weight', isSelected ? 'bold' : 'normal')
+                .text(group);
+        });
+        
+        // Set reduced legend height
+        pcp.legendHeight = 22;
+    } catch (error) {
+        console.error("Error adding PCP legend:", error);
+    }
+}
 // Format feature name for display
 function formatFeatureName(feature) {
     return feature.split('_')

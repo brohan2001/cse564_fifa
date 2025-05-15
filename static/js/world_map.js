@@ -35,11 +35,14 @@ function initializeWorldMap() {
     console.log(`World map dimensions: ${worldMap.width} x ${worldMap.height}`);
     
     // Create SVG
+    // worldMap.svg = d3.select('#world-map')
+    //     .append('svg')
+    //     .attr('width', worldMap.width)
+    //     .attr('height', worldMap.height);
     worldMap.svg = d3.select('#world-map')
-        .append('svg')
-        .attr('width', worldMap.width)
-        .attr('height', worldMap.height);
-    
+    .append('svg')
+    .attr('width', worldMap.width)
+    .attr('height', worldMap.height + 60);  // Add extra height for the legend
     // Create tooltip
     worldMap.tooltip = createTooltip();
     
@@ -60,9 +63,12 @@ function initializeWorldMap() {
         .domain([0, 100]);
     
     // Add legend container
+    // worldMap.legendContainer = worldMap.svg.append('g')
+    //     .attr('class', 'legend')
+    //     .attr('transform', `translate(20, ${worldMap.height - 40})`);
     worldMap.legendContainer = worldMap.svg.append('g')
-        .attr('class', 'legend')
-        .attr('transform', `translate(20, ${worldMap.height - 40})`);
+    .attr('class', 'legend')
+    .attr('transform', `translate(${worldMap.width/2 - 100}, ${worldMap.height + 20})`);
     
     // Add zoom controls
     addZoomControls();
@@ -218,8 +224,33 @@ function addZoomControls() {
 }
 
 // Set up zoom behavior
+// function setupZoom() {
+    
+//     // Define zoom behavior
+//     worldMap.zoom = d3.zoom()
+//         .scaleExtent([1, 8])
+//         .on('zoom', function(event) {
+//             worldMap.zoomGroup.attr('transform', event.transform);
+            
+//             // Update path stroke width based on zoom level
+//             const strokeWidth = 0.5 / event.transform.k;
+//             worldMap.zoomGroup.selectAll('path')
+//                 .attr('stroke-width', function(d) {
+//                     // Keep selected country's stroke thicker
+//                     if (worldMap.selectedCountry === d.properties.name) {
+//                         return 1.5 / event.transform.k;
+//                     }
+//                     return strokeWidth;
+//                 });
+//         });
+    
+//     // Apply zoom behavior to SVG
+//     worldMap.svg.call(worldMap.zoom);
+// }
+
+// Set up zoom behavior with initial focus on Europe
 function setupZoom() {
-    // Define zoom behavior
+    // Define the zoom behavior
     worldMap.zoom = d3.zoom()
         .scaleExtent([1, 8])
         .on('zoom', function(event) {
@@ -239,6 +270,17 @@ function setupZoom() {
     
     // Apply zoom behavior to SVG
     worldMap.svg.call(worldMap.zoom);
+    
+    // Initial transform to focus on Europe (including Turkey)
+    const europeTransform = d3.zoomIdentity
+        .translate(worldMap.width / 2, worldMap.height / 2)
+        .scale(3.5)  // Zoom level
+        .translate(-worldMap.projection([15, 50])[0], -worldMap.projection([15, 50])[1]);  // Center on Europe
+    
+    // Apply the initial transform with a smooth transition
+    worldMap.svg.transition()
+        .duration(1000)
+        .call(worldMap.zoom.transform, europeTransform);
 }
 
 // Load GeoJSON data
