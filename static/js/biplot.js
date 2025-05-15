@@ -4595,7 +4595,7 @@ function addPCPLegend(groups) {
             // Smaller text
             item.append('text')
                 .attr('x', 12)
-                .attr('y', 7)q
+                .attr('y', 7)
                 .style('font-size', '9px')
                 .style('font-weight', isSelected ? 'bold' : 'normal')
                 .text(group);
